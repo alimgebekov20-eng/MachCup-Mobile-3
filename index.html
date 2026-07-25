@@ -5,14 +5,275 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>⚽ STREET FOOTBALL LEGENDS</title>
     <style>
-        /* ... ВЕСЬ CSS ТОТ ЖЕ, ЧТО В ПРЕДЫДУЩЕЙ ВЕРСИИ ... */
-        /* (скопируй CSS из предыдущего сообщения, он рабочий) */
+        /* ===== ВЕСЬ CSS ТОТ ЖЕ ===== */
+        * { margin: 0; padding: 0; box-sizing: border-box; touch-action: none; user-select: none; -webkit-touch-callout: none; }
+        body { background: #0d1b2a; overflow: hidden; font-family: Arial, sans-serif; position: fixed; width: 100%; height: 100%; color: white; }
+        canvas { display: block; width: 100vw; height: 100vh; background: #1b4332; }
+        #ui-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10; }
+        .btn { pointer-events: auto; background: rgba(60,60,80,0.85); border: 2px solid rgba(255,255,255,0.2); color: white; font-size: 14px; font-weight: bold; padding: 10px 16px; border-radius: 10px; cursor: pointer; text-shadow: 0 2px 4px rgba(0,0,0,0.5); box-shadow: 0 4px 15px rgba(0,0,0,0.3); transition: all 0.2s; touch-action: manipulation; width: 100%; text-align: center; }
+        .btn:active { transform: scale(0.95); }
+        .btn.active { background: rgba(255,215,0,0.85) !important; border-color: #ffd700 !important; box-shadow: 0 0 30px rgba(255,215,0,0.3); color: #1a1a2e !important; }
+        .btn-blue { background: rgba(50,100,255,0.7); border-color: #4d7aff; }
+        .btn-red { background: rgba(200,50,50,0.7); border-color: #ff6b6b; }
+        .btn-gold { background: rgba(200,150,50,0.7); border-color: #ffd700; }
+        .btn-green { background: rgba(0,200,100,0.7); border-color: #51cf66; }
+        .btn-purple { background: rgba(150,50,200,0.7); border-color: #b197fc; }
+        .btn-gray { background: rgba(100,100,120,0.7); border-color: rgba(255,255,255,0.2); }
+        .btn-orange { background: rgba(255,150,50,0.7); border-color: #ffa94d; }
+        #menu-container { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; pointer-events: none; width: 94%; max-width: 440px; max-height: 95vh; overflow-y: auto; }
+        #menu-container .title { color: white; font-size: 28px; font-weight: bold; text-shadow: 0 0 30px rgba(0,0,0,0.8); margin-bottom: 6px; }
+        #menu-container .subtitle { color: rgba(255,255,255,0.6); font-size: 12px; margin-bottom: 10px; }
+        .menu-section { background: rgba(0,0,0,0.4); border-radius: 12px; padding: 8px 10px; margin-bottom: 6px; backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); }
+        .menu-section .section-title { font-size: 10px; text-transform: uppercase; color: rgba(255,255,255,0.3); margin-bottom: 5px; letter-spacing: 1px; }
+        .row-buttons { display: flex; gap: 5px; flex-wrap: wrap; }
+        .row-buttons .btn { flex: 1; min-width: 55px; padding: 6px 8px; font-size: 11px; }
+        .btn-full { margin: 4px 0; padding: 10px; font-size: 14px; }
+        #score-display { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); color: white; font-size: 24px; font-weight: bold; text-shadow: 0 0 20px rgba(0,0,0,0.8); background: rgba(0,0,0,0.6); padding: 3px 16px; border-radius: 10px; pointer-events: none; z-index: 20; display: none; }
+        #timer-display { position: absolute; top: 10px; right: 10px; color: white; font-size: 16px; font-weight: bold; text-shadow: 0 0 20px rgba(0,0,0,0.8); background: rgba(0,0,0,0.5); padding: 3px 10px; border-radius: 8px; pointer-events: none; z-index: 20; display: none; }
+        #statusBar { position: absolute; top: 52px; left: 10px; color: rgba(255,255,255,0.6); font-size: 10px; pointer-events: none; z-index: 10; background: rgba(0,0,0,0.4); padding: 2px 8px; border-radius: 6px; display: none; }
+        #ratingDisplay { position: absolute; top: 52px; right: 10px; color: #ffd700; font-size: 12px; font-weight: bold; pointer-events: none; z-index: 10; background: rgba(0,0,0,0.4); padding: 2px 8px; border-radius: 6px; display: none; }
+        #online-status { position: absolute; top: 52px; left: 50%; transform: translateX(-50%); color: #51cf66; font-size: 11px; font-weight: bold; pointer-events: none; z-index: 10; background: rgba(0,0,0,0.5); padding: 2px 12px; border-radius: 6px; display: none; }
+        #joystick-area { position: absolute; bottom: 80px; left: 20px; width: 130px; height: 130px; pointer-events: auto; z-index: 30; display: none; touch-action: none; }
+        #joystick-base { position: absolute; width: 130px; height: 130px; border-radius: 50%; background: rgba(255,255,255,0.12); border: 3px solid rgba(255,255,255,0.2); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); box-shadow: 0 0 40px rgba(0,0,0,0.3); }
+        #joystick-thumb { position: absolute; width: 55px; height: 55px; border-radius: 50%; background: radial-gradient(circle at 40% 35%, rgba(255,255,255,0.6), rgba(200,200,200,0.3)); border: 2px solid rgba(255,255,255,0.3); left: 50%; top: 50%; transform: translate(-50%, -50%); box-shadow: 0 0 30px rgba(255,255,255,0.1); transition: none; pointer-events: none; }
+        #joystick-center-dot { position: absolute; width: 8px; height: 8px; border-radius: 50%; background: rgba(255,255,255,0.2); left: 50%; top: 50%; transform: translate(-50%, -50%); pointer-events: none; }
+        #action-buttons { position: absolute; bottom: 80px; right: 20px; display: none; flex-direction: column; gap: 10px; pointer-events: none; z-index: 30; }
+        .action-btn { pointer-events: auto; width: 70px; height: 70px; border-radius: 50%; border: 3px solid rgba(255,255,255,0.3); color: white; font-size: 13px; font-weight: bold; display: flex; align-items: center; justify-content: center; text-shadow: 0 2px 8px rgba(0,0,0,0.5); touch-action: manipulation; backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); box-shadow: 0 4px 20px rgba(0,0,0,0.3); }
+        .action-btn:active { transform: scale(0.92); }
+        .btn-shoot { background: radial-gradient(circle at 40% 35%, rgba(255,80,80,0.8), rgba(200,30,30,0.6)); border-color: rgba(255,100,100,0.5); }
+        .btn-pass { background: radial-gradient(circle at 40% 35%, rgba(80,255,80,0.8), rgba(30,200,30,0.6)); border-color: rgba(100,255,100,0.5); }
+        .btn-tackle { background: radial-gradient(circle at 40% 35%, rgba(80,80,255,0.8), rgba(30,30,200,0.6)); border-color: rgba(100,100,255,0.5); }
+        #message { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: white; font-size: 26px; font-weight: bold; text-shadow: 0 0 30px rgba(0,0,0,0.9); background: rgba(0,0,0,0.8); padding: 14px 28px; border-radius: 14px; pointer-events: none; z-index: 40; display: none; text-align: center; max-width: 90%; }
+        #leaderboard { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(13,27,42,0.95); border-radius: 16px; padding: 16px; width: 92%; max-width: 420px; max-height: 80vh; overflow-y: auto; pointer-events: auto; z-index: 50; display: none; color: white; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1); }
+        #leaderboard h2 { text-align: center; margin-bottom: 10px; color: #ffd700; font-size: 18px; }
+        #leaderboard .entry { display: flex; justify-content: space-between; padding: 5px 10px; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 13px; }
+        #leaderboard .entry .rank { color: #ffd700; font-weight: bold; width: 28px; }
+        #leaderboard .entry .name { flex: 1; padding: 0 8px; }
+        #leaderboard .entry .rating { color: #ffd700; }
+        #leaderboard .entry .wins { color: rgba(255,255,255,0.3); font-size: 11px; }
+        .close-btn { margin-top: 10px; }
+        #login-container { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(13,27,42,0.95); border-radius: 16px; padding: 20px; width: 92%; max-width: 380px; z-index: 60; pointer-events: auto; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); display: none; border: 1px solid rgba(255,255,255,0.1); }
+        #login-container h2 { color: white; text-align: center; margin-bottom: 10px; font-size: 18px; }
+        #login-container input { width: 100%; padding: 10px; margin: 5px 0; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.06); color: white; font-size: 14px; pointer-events: auto; outline: none; }
+        #login-container input::placeholder { color: rgba(255,255,255,0.25); }
+        #login-container input:focus { border-color: #ffd700; }
+        #login-container .btn { margin: 3px 0; }
+        #loginMsg { text-align: center; margin-top: 6px; font-size: 12px; min-height: 18px; }
+        .login-success { color: #51cf66 !important; }
+        .login-error { color: #ff6b6b !important; }
+        #inventory-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); z-index: 70; display: none; align-items: center; justify-content: center; padding: 20px; }
+        #inventory-container { background: rgba(13,27,42,0.95); border-radius: 20px; padding: 20px; width: 100%; max-width: 460px; max-height: 90vh; overflow-y: auto; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 0 60px rgba(0,0,0,0.5); }
+        #inventory-container h2 { color: #ffd700; text-align: center; margin-bottom: 8px; font-size: 22px; }
+        #inventory-stats { text-align: center; font-size: 13px; color: rgba(255,255,255,0.5); margin-bottom: 12px; }
+        .inv-section-title { font-size: 11px; text-transform: uppercase; color: rgba(255,255,255,0.3); margin: 10px 0 5px; letter-spacing: 1px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 4px; }
+        .skin-item { background: rgba(255,255,255,0.03); border-radius: 8px; padding: 8px 12px; margin: 4px 0; display: flex; justify-content: space-between; align-items: center; font-size: 13px; border: 1px solid rgba(255,255,255,0.05); }
+        .skin-item .skin-info { display: flex; flex-direction: column; align-items: flex-start; }
+        .skin-item .skin-name { font-weight: bold; }
+        .skin-item .skin-desc { font-size: 10px; color: rgba(255,255,255,0.4); }
+        .skin-item .skin-rating { color: #ffd700; font-size: 12px; }
+        .skin-item .skin-btn { background: rgba(255,215,0,0.15); border: 1px solid rgba(255,215,0,0.2); border-radius: 6px; padding: 4px 12px; color: #ffd700; font-size: 11px; cursor: pointer; transition: all 0.2s; }
+        .skin-item .skin-btn:active { transform: scale(0.95); background: rgba(255,215,0,0.3); }
+        .skin-item .equipped-badge { color: #51cf66; font-weight: bold; font-size: 11px; }
+        .rarity-common .skin-name { color: #8a8a8a; }
+        .rarity-uncommon .skin-name { color: #51cf66; }
+        .rarity-rare .skin-name { color: #4d7aff; }
+        .rarity-epic .skin-name { color: #b197fc; }
+        .rarity-legendary .skin-name { color: #ffd700; }
+        .rarity-mythic .skin-name { color: #ff6b6b; }
+        .close-inv { margin-top: 12px; }
+        #packs-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); z-index: 80; display: none; align-items: center; justify-content: center; padding: 20px; }
+        #packs-container { background: rgba(13,27,42,0.95); border-radius: 20px; padding: 20px; width: 100%; max-width: 460px; max-height: 90vh; overflow-y: auto; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 0 60px rgba(0,0,0,0.5); }
+        #packs-container h2 { color: #ffd700; text-align: center; margin-bottom: 8px; font-size: 22px; }
+        #packs-crystals { text-align: center; font-size: 14px; color: rgba(255,255,255,0.5); margin-bottom: 12px; }
+        .pack-item { background: rgba(255,255,255,0.05); border-radius: 12px; padding: 12px 14px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; border: 1px solid rgba(255,255,255,0.05); }
+        .pack-item .pack-info { display: flex; flex-direction: column; align-items: flex-start; }
+        .pack-item .pack-name { font-weight: bold; font-size: 15px; }
+        .pack-item .pack-desc { font-size: 11px; color: rgba(255,255,255,0.4); }
+        .pack-item .pack-price { font-weight: bold; font-size: 16px; color: #ffd700; }
+        .pack-item .pack-btn { background: rgba(255,215,0,0.2); border: 1px solid rgba(255,215,0,0.3); border-radius: 8px; padding: 6px 14px; color: #ffd700; font-weight: bold; font-size: 13px; cursor: pointer; transition: all 0.2s; }
+        .pack-item .pack-btn:active { transform: scale(0.95); background: rgba(255,215,0,0.4); }
+        .pack-item .pack-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+        .rarity-common { border-left: 4px solid #8a8a8a; }
+        .rarity-uncommon { border-left: 4px solid #51cf66; }
+        .rarity-rare { border-left: 4px solid #4d7aff; }
+        .rarity-epic { border-left: 4px solid #b197fc; }
+        .rarity-legendary { border-left: 4px solid #ffd700; }
+        .rarity-mythic { border-left: 4px solid #ff6b6b; }
+        .close-packs { margin-top: 12px; }
+        #online-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); z-index: 90; display: none; align-items: center; justify-content: center; padding: 20px; }
+        #online-container { background: rgba(13,27,42,0.95); border-radius: 20px; padding: 20px; width: 100%; max-width: 460px; max-height: 90vh; overflow-y: auto; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 0 60px rgba(0,0,0,0.5); }
+        #online-container h2 { color: #4d7aff; text-align: center; margin-bottom: 8px; font-size: 22px; }
+        .online-status-text { text-align: center; font-size: 14px; color: rgba(255,255,255,0.5); margin-bottom: 12px; min-height: 24px; }
+        .online-btn { margin: 4px 0; }
+        .close-online { margin-top: 12px; }
+        #lobby-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); z-index: 95; display: none; align-items: center; justify-content: center; padding: 20px; }
+        #lobby-container { background: rgba(13,27,42,0.95); border-radius: 20px; padding: 20px; width: 100%; max-width: 460px; max-height: 90vh; overflow-y: auto; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 0 60px rgba(0,0,0,0.5); }
+        #lobby-container h2 { color: #ffd700; text-align: center; margin-bottom: 8px; font-size: 20px; }
+        .lobby-info { text-align: center; font-size: 14px; color: rgba(255,255,255,0.6); margin-bottom: 12px; }
+        .lobby-players { background: rgba(255,255,255,0.03); border-radius: 10px; padding: 10px; margin-bottom: 12px; }
+        .lobby-player { padding: 6px 10px; margin: 3px 0; border-radius: 6px; background: rgba(255,255,255,0.05); display: flex; justify-content: space-between; align-items: center; }
+        .lobby-player .host-badge { color: #ffd700; font-size: 11px; }
+        .lobby-player .ready-badge { color: #51cf66; font-size: 11px; }
+        .lobby-player .waiting-badge { color: rgba(255,255,255,0.3); font-size: 11px; }
+        #create-lobby-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); z-index: 92; display: none; align-items: center; justify-content: center; padding: 20px; }
+        #create-lobby-container { background: rgba(13,27,42,0.95); border-radius: 20px; padding: 20px; width: 100%; max-width: 460px; max-height: 90vh; overflow-y: auto; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 0 60px rgba(0,0,0,0.5); }
+        #create-lobby-container h2 { color: #ffd700; text-align: center; margin-bottom: 12px; font-size: 20px; }
+        #create-lobby-container input { width: 100%; padding: 10px; margin: 5px 0; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.06); color: white; font-size: 14px; pointer-events: auto; outline: none; }
+        #create-lobby-container input::placeholder { color: rgba(255,255,255,0.25); }
+        #create-lobby-container input:focus { border-color: #ffd700; }
+        .mode-select { display: flex; gap: 10px; margin: 10px 0; }
+        .mode-select .btn { flex: 1; padding: 8px; font-size: 13px; }
+        .mode-select .btn.active { background: rgba(255,215,0,0.3) !important; border-color: #ffd700 !important; }
+        #find-lobby-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); z-index: 93; display: none; align-items: center; justify-content: center; padding: 20px; }
+        #find-lobby-container { background: rgba(13,27,42,0.95); border-radius: 20px; padding: 20px; width: 100%; max-width: 460px; max-height: 90vh; overflow-y: auto; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 0 60px rgba(0,0,0,0.5); }
+        #find-lobby-container h2 { color: #4d7aff; text-align: center; margin-bottom: 12px; font-size: 20px; }
+        .lobby-item { background: rgba(255,255,255,0.05); border-radius: 10px; padding: 12px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; border: 1px solid rgba(255,255,255,0.05); }
+        .lobby-item .lobby-info-text { display: flex; flex-direction: column; align-items: flex-start; }
+        .lobby-item .lobby-name { font-weight: bold; font-size: 14px; }
+        .lobby-item .lobby-desc { font-size: 11px; color: rgba(255,255,255,0.4); }
+        .lobby-item .join-btn { background: rgba(81,207,102,0.2); border: 1px solid rgba(81,207,102,0.3); border-radius: 8px; padding: 6px 16px; color: #51cf66; font-weight: bold; font-size: 12px; cursor: pointer; transition: all 0.2s; }
+        .lobby-item .join-btn:active { transform: scale(0.95); background: rgba(81,207,102,0.4); }
+        .lobby-item .join-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+        .refresh-btn { margin-bottom: 10px; }
+        @media(max-width:600px) { #joystick-area { width: 110px; height: 110px; bottom: 60px; left: 15px; } #joystick-base { width: 110px; height: 110px; } #joystick-thumb { width: 45px; height: 45px; } .action-btn { width: 58px; height: 58px; font-size: 11px; } #action-buttons { gap: 8px; bottom: 60px; right: 15px; } #menu-container .title { font-size: 22px; } #score-display { font-size: 20px; padding: 2px 12px; } .btn { font-size: 11px; padding: 8px 10px; } .row-buttons .btn { font-size: 10px; padding: 5px 6px; min-width: 45px; } .lobby-item { flex-wrap: wrap; gap: 8px; } .lobby-item .join-btn { width: 100%; text-align: center; } }
+        @media(max-width:400px) { #joystick-area { width: 90px; height: 90px; bottom: 50px; left: 10px; } #joystick-base { width: 90px; height: 90px; } #joystick-thumb { width: 38px; height: 38px; } .action-btn { width: 50px; height: 50px; font-size: 10px; } #action-buttons { gap: 6px; bottom: 50px; right: 10px; } #score-display { font-size: 16px; padding: 2px 10px; } #timer-display { font-size: 13px; padding: 2px 8px; } .btn { font-size: 10px; padding: 6px 8px; } }
     </style>
 </head>
 <body>
 
-    <!-- ВЕСЬ HTML ТОТ ЖЕ, ЧТО В ПРЕДЫДУЩЕЙ ВЕРСИИ -->
-    <!-- (скопируй HTML из предыдущего сообщения, он рабочий) -->
+    <canvas id="gameCanvas"></canvas>
+
+    <div id="ui-overlay">
+        <div id="score-display">0 : 0</div>
+        <div id="timer-display">⏱️ 5:00</div>
+        <div id="statusBar">⚽ Добро пожаловать!</div>
+        <div id="ratingDisplay">⭐ 50</div>
+        <div id="online-status"></div>
+
+        <div id="menu-container">
+            <div class="title">⚽ STREET<br>FOOTBALL</div>
+            <div class="subtitle" id="playerInfo">👤 Гость | ⭐ 50 | 💎 100</div>
+            <div class="menu-section">
+                <div class="section-title">🎮 Режим</div>
+                <div class="row-buttons">
+                    <button class="btn active" id="mode2x2">2x2</button>
+                    <button class="btn" id="mode3x3">3x3</button>
+                </div>
+            </div>
+            <div class="menu-section">
+                <div class="section-title">⚡ Сложность (оффлайн)</div>
+                <div class="row-buttons">
+                    <button class="btn active" id="diffEasy">🟢 Лёгкий</button>
+                    <button class="btn" id="diffMedium">🟡 Средний</button>
+                    <button class="btn" id="diffHard">🔴 Сложный</button>
+                </div>
+            </div>
+            <button class="btn btn-green btn-full" onclick="startOfflineGame()">⚔️ ОФФЛАЙН МАТЧ</button>
+            <div id="guestMenu">
+                <button class="btn btn-blue btn-full" onclick="showLogin()">🔑 Войти</button>
+                <button class="btn btn-purple btn-full" onclick="showRegister()">📝 Регистрация</button>
+            </div>
+            <div id="userMenu" style="display:none;">
+                <button class="btn btn-orange btn-full" onclick="showOnlineUI()">🌐 ОНЛАЙН</button>
+                <button class="btn btn-gold btn-full" onclick="showPacksUI()">📦 ПАКИ</button>
+                <button class="btn btn-purple btn-full" onclick="showInventoryUI()">🎒 ИНВЕНТАРЬ</button>
+            </div>
+            <button class="btn btn-gold btn-full" onclick="showLeaderboard()">📊 Рейтинг</button>
+        </div>
+
+        <div id="login-container">
+            <h2 id="loginTitle">🔑 Вход</h2>
+            <input type="text" id="loginName" placeholder="Имя игрока">
+            <input type="password" id="loginPass" placeholder="Пароль">
+            <button class="btn btn-blue" onclick="handleLogin()">✅ Войти</button>
+            <button class="btn btn-gray" onclick="closeLogin()">↩️ Назад</button>
+            <div id="loginMsg"></div>
+        </div>
+
+        <div id="leaderboard">
+            <h2>🏆 ТАБЛИЦА РЕЙТИНГОВ</h2>
+            <div id="leaderboard-list"></div>
+            <button class="btn btn-gray close-btn" onclick="closeLeaderboard()">↩️ Назад</button>
+        </div>
+
+        <div id="packs-overlay">
+            <div id="packs-container">
+                <h2>📦 ПАКИ</h2>
+                <div id="packs-crystals"></div>
+                <div id="packs-list"></div>
+                <button class="btn btn-gray close-packs" onclick="closePacksUI()">↩️ Назад</button>
+            </div>
+        </div>
+
+        <div id="inventory-overlay">
+            <div id="inventory-container">
+                <h2>🎒 ИНВЕНТАРЬ</h2>
+                <div id="inventory-stats"></div>
+                <div id="inventory-list"></div>
+                <button class="btn btn-gray close-inv" onclick="closeInventoryUI()">↩️ Назад</button>
+            </div>
+        </div>
+
+        <div id="online-overlay">
+            <div id="online-container">
+                <h2>🌐 ОНЛАЙН</h2>
+                <div class="online-status-text" id="online-status-text">⚡ Выберите режим</div>
+                <button class="btn btn-orange online-btn" onclick="showCreateLobbyUI()">🏠 СОЗДАТЬ ЛОББИ</button>
+                <button class="btn btn-blue online-btn" onclick="showFindLobbyUI()">🔍 НАЙТИ ЛОББИ</button>
+                <button class="btn btn-gray close-online" onclick="closeOnlineUI()">↩️ Назад</button>
+            </div>
+        </div>
+
+        <div id="create-lobby-overlay">
+            <div id="create-lobby-container">
+                <h2>🏠 СОЗДАНИЕ ЛОББИ</h2>
+                <input type="text" id="lobbyNameInput" placeholder="Название лобби (необязательно)">
+                <div class="mode-select">
+                    <button class="btn active" onclick="selectLobbyMode('1x1', this)">⚔️ 1x1</button>
+                    <button class="btn" onclick="selectLobbyMode('2x2', this)">⚔️ 2x2</button>
+                </div>
+                <button class="btn btn-green" onclick="createLobby()">✅ СОЗДАТЬ</button>
+                <button class="btn btn-gray" onclick="closeCreateLobbyUI()">↩️ Назад</button>
+                <div id="create-lobby-msg"></div>
+            </div>
+        </div>
+
+        <div id="find-lobby-overlay">
+            <div id="find-lobby-container">
+                <h2>🔍 ПОИСК ЛОББИ</h2>
+                <button class="btn btn-blue refresh-btn" onclick="findLobbies()">🔄 Обновить список</button>
+                <div id="lobby-list"></div>
+                <button class="btn btn-gray" onclick="closeFindLobbyUI()">↩️ Назад</button>
+            </div>
+        </div>
+
+        <div id="lobby-overlay">
+            <div id="lobby-container">
+                <h2 id="lobby-title">🏠 ЛОББИ</h2>
+                <div class="lobby-info" id="lobby-info">📊 Режим: 1x1</div>
+                <div class="lobby-players" id="lobby-players-list"></div>
+                <div class="lobby-info" id="lobby-status-text">⏳ Ожидание игроков...</div>
+                <button class="btn btn-green" id="lobby-start-btn" onclick="startOnlineMatch()" style="display:none;">▶️ НАЧАТЬ МАТЧ</button>
+                <button class="btn btn-red" onclick="leaveLobby()">🚪 ВЫЙТИ</button>
+                <div id="lobby-msg"></div>
+            </div>
+        </div>
+
+        <div id="message"></div>
+
+        <div id="joystick-area">
+            <div id="joystick-base">
+                <div id="joystick-thumb"></div>
+                <div id="joystick-center-dot"></div>
+            </div>
+        </div>
+
+        <div id="action-buttons">
+            <button class="action-btn btn-shoot" id="btn-shoot">⚽<br>Удар</button>
+            <button class="action-btn btn-pass" id="btn-pass">🎯<br>Пас</button>
+            <button class="action-btn btn-tackle" id="btn-tackle">🛡️<br>Отбор</button>
+        </div>
+    </div>
 
     <script>
         // ============================================================
@@ -50,12 +311,9 @@
         let currentLobby = null;
         let isInLobby = false;
         let isHost = false;
-        let onlineMatchStarted = false;
         let isOnline = false;
         let opponentName = '';
-        let lobbyPlayers = [];
         let syncInterval = null;
-        let gameStarted = false;
 
         // ---- API ----
         const SERVER_URL = 'https://machcup-mobile-server.onrender.com';
@@ -69,7 +327,6 @@
                 });
                 return await res.json();
             } catch (e) {
-                console.log('API Error:', e);
                 return { error: 'Ошибка соединения с сервером' };
             }
         }
@@ -79,12 +336,11 @@
                 const res = await fetch(SERVER_URL + endpoint);
                 return await res.json();
             } catch (e) {
-                console.log('API Error:', e);
                 return { error: 'Ошибка соединения с сервером' };
             }
         }
 
-        // ---- СКИНЫ ----
+        // ---- СКИНЫ И ПАКИ ----
         const SKIN_DATA = {
             'Повязка': { slot: 1, rarity: 'common', rating: 0 },
             'Бандана': { slot: 1, rarity: 'uncommon', rating: 1 },
@@ -140,6 +396,67 @@
             epic: '🟣 Эпический пак',
             legendary: '🟠 Легендарный пак'
         };
+
+        function recalcRating() {
+            let rating = 50;
+            for (let slot = 1; slot <= 5; slot++) {
+                const skinName = equippedSkins[slot];
+                if (skinName && SKIN_DATA[skinName]) {
+                    rating += SKIN_DATA[skinName].rating;
+                }
+            }
+            playerRating = Math.min(rating, 99);
+            updateUI();
+            saveGame();
+        }
+
+        function loadSave() {
+            try {
+                const data = localStorage.getItem('football_save');
+                if (data) {
+                    const save = JSON.parse(data);
+                    playerName = save.name || '';
+                    playerRating = save.rating || 50;
+                    playerCrystals = save.crystals || 100;
+                    playerWins = save.wins || 0;
+                    playerMatches = save.matches || 0;
+                    playerGoals = save.goals || 0;
+                    equippedSkins = save.equippedSkins || { 1: 'Повязка', 2: 'Майка', 3: 'Шорты', 4: 'Кеды', 5: 'Нарукавник' };
+                    ownedSkins = save.ownedSkins || {};
+                    recalcRating();
+                }
+            } catch (e) { console.log('Ошибка загрузки', e); }
+        }
+
+        function saveGame() {
+            try {
+                const data = {
+                    name: playerName,
+                    rating: playerRating,
+                    crystals: playerCrystals,
+                    wins: playerWins,
+                    matches: playerMatches,
+                    goals: playerGoals,
+                    equippedSkins: equippedSkins,
+                    ownedSkins: ownedSkins
+                };
+                localStorage.setItem('football_save', JSON.stringify(data));
+            } catch (e) { console.log('Ошибка сохранения', e); }
+        }
+
+        function updateUI() {
+            const info = document.getElementById('playerInfo');
+            if (playerName) {
+                info.textContent = '👤 ' + playerName + ' | ⭐ ' + playerRating + ' | 💎 ' + playerCrystals;
+                document.getElementById('guestMenu').style.display = 'none';
+                document.getElementById('userMenu').style.display = 'block';
+            } else {
+                info.textContent = '👤 Гость | ⭐ 50 | 💎 100';
+                document.getElementById('guestMenu').style.display = 'block';
+                document.getElementById('userMenu').style.display = 'none';
+            }
+            document.getElementById('ratingDisplay').textContent = '⭐ ' + playerRating;
+        }
 
         // ---- ПАКИ ----
         function openPack(packType) {
@@ -212,70 +529,7 @@
             }
         }
 
-        // ---- ФУНКЦИИ ----
-        function recalcRating() {
-            let rating = 50;
-            for (let slot = 1; slot <= 5; slot++) {
-                const skinName = equippedSkins[slot];
-                if (skinName && SKIN_DATA[skinName]) {
-                    rating += SKIN_DATA[skinName].rating;
-                }
-            }
-            playerRating = Math.min(rating, 99);
-            updateUI();
-            saveGame();
-        }
-
-        function loadSave() {
-            try {
-                const data = localStorage.getItem('football_save');
-                if (data) {
-                    const save = JSON.parse(data);
-                    playerName = save.name || '';
-                    playerRating = save.rating || 50;
-                    playerCrystals = save.crystals || 100;
-                    playerWins = save.wins || 0;
-                    playerMatches = save.matches || 0;
-                    playerGoals = save.goals || 0;
-                    equippedSkins = save.equippedSkins || { 1: 'Повязка', 2: 'Майка', 3: 'Шорты', 4: 'Кеды', 5: 'Нарукавник' };
-                    ownedSkins = save.ownedSkins || {};
-                    recalcRating();
-                }
-            } catch (e) { console.log('Ошибка загрузки', e); }
-        }
-
-        function saveGame() {
-            try {
-                const data = {
-                    name: playerName,
-                    rating: playerRating,
-                    crystals: playerCrystals,
-                    wins: playerWins,
-                    matches: playerMatches,
-                    goals: playerGoals,
-                    equippedSkins: equippedSkins,
-                    ownedSkins: ownedSkins
-                };
-                localStorage.setItem('football_save', JSON.stringify(data));
-            } catch (e) { console.log('Ошибка сохранения', e); }
-        }
-
-        // ---- UI ----
-        function updateUI() {
-            const info = document.getElementById('playerInfo');
-            if (playerName) {
-                info.textContent = '👤 ' + playerName + ' | ⭐ ' + playerRating + ' | 💎 ' + playerCrystals;
-                document.getElementById('guestMenu').style.display = 'none';
-                document.getElementById('userMenu').style.display = 'block';
-            } else {
-                info.textContent = '👤 Гость | ⭐ 50 | 💎 100';
-                document.getElementById('guestMenu').style.display = 'block';
-                document.getElementById('userMenu').style.display = 'none';
-            }
-            document.getElementById('ratingDisplay').textContent = '⭐ ' + playerRating;
-        }
-
-        // ---- ПАКИ UI ----
+        // ---- UI ПАКОВ ----
         function showPacksUI() {
             document.getElementById('packs-overlay').style.display = 'flex';
             renderPacksUI();
@@ -312,7 +566,7 @@
             list.innerHTML = html;
         }
 
-        // ---- ИНВЕНТАРЬ UI ----
+        // ---- UI ИНВЕНТАРЯ ----
         function showInventoryUI() {
             document.getElementById('inventory-overlay').style.display = 'flex';
             renderInventoryUI();
@@ -375,10 +629,9 @@
         }
 
         // ============================================================
-        // ==================== ОНЛАЙН СИСТЕМА ========================
+        // ==================== ОНЛАЙН ================================
         // ============================================================
 
-        // ---- ОНЛАЙН UI ----
         function showOnlineUI() {
             if (!playerName) {
                 showMessage('❌ Сначала войдите в аккаунт!');
@@ -392,7 +645,6 @@
             document.getElementById('online-overlay').style.display = 'none';
         }
 
-        // ---- СОЗДАНИЕ ЛОББИ UI ----
         function showCreateLobbyUI() {
             closeOnlineUI();
             document.getElementById('create-lobby-overlay').style.display = 'flex';
@@ -414,7 +666,6 @@
             lobbyMode = mode;
         }
 
-        // ---- ПОИСК ЛОББИ UI ----
         function showFindLobbyUI() {
             closeOnlineUI();
             document.getElementById('find-lobby-overlay').style.display = 'flex';
@@ -426,7 +677,6 @@
             showOnlineUI();
         }
 
-        // ---- ЛОББИ UI ----
         function showLobbyUI() {
             document.getElementById('lobby-overlay').style.display = 'flex';
             updateLobbyUI();
@@ -436,7 +686,7 @@
             document.getElementById('lobby-overlay').style.display = 'none';
         }
 
-        // ---- СОЗДАНИЕ ЛОББИ (API) ----
+        // ---- СОЗДАНИЕ ЛОББИ ----
         async function createLobby() {
             const lobbyName = document.getElementById('lobbyNameInput').value.trim() || 'Лобби ' + playerName;
 
@@ -459,18 +709,15 @@
             currentLobby = result.lobby_id;
             isInLobby = true;
             isHost = true;
-            lobbyPlayers = [playerName];
 
             closeCreateLobbyUI();
             showLobbyUI();
             showMessage('✅ Лобби "' + lobbyName + '" создано! Ожидайте игрока...');
             updateLobbyUI();
-
-            // Запускаем обновление лобби
             startLobbySync();
         }
 
-        // ---- ПОИСК ЛОББИ (API) ----
+        // ---- ПОИСК ЛОББИ ----
         async function findLobbies() {
             const list = document.getElementById('lobby-list');
             if (!list) return;
@@ -507,7 +754,7 @@
             list.innerHTML = html;
         }
 
-        // ---- ПРИСОЕДИНЕНИЕ К ЛОББИ (API) ----
+        // ---- ПРИСОЕДИНЕНИЕ ----
         async function joinLobby(lobbyId) {
             const result = await apiCall('/api/lobby/join', {
                 lobby_id: lobbyId,
@@ -522,18 +769,15 @@
             currentLobby = lobbyId;
             isInLobby = true;
             isHost = false;
-            lobbyPlayers = result.lobby.players;
 
             closeFindLobbyUI();
             showLobbyUI();
             showMessage('✅ Вы присоединились к лобби! Ожидайте начала матча...');
             updateLobbyUI();
-
-            // Запускаем обновление лобби
             startLobbySync();
         }
 
-        // ---- СИНХРОНИЗАЦИЯ ЛОББИ ----
+        // ---- СИНХРОНИЗАЦИЯ ----
         function startLobbySync() {
             if (syncInterval) clearInterval(syncInterval);
             syncInterval = setInterval(async () => {
@@ -546,7 +790,7 @@
             }, 1500);
         }
 
-        // ---- ВЫХОД ИЗ ЛОББИ (API) ----
+        // ---- ВЫХОД ----
         async function leaveLobby() {
             if (!currentLobby) return;
 
@@ -568,15 +812,13 @@
             currentLobby = null;
             isInLobby = false;
             isHost = false;
-            onlineMatchStarted = false;
-            lobbyPlayers = [];
 
             closeLobbyUI();
             showOnlineUI();
             showMessage('🚪 Вы вышли из лобби');
         }
 
-        // ---- ОБНОВЛЕНИЕ ЛОББИ UI (API) ----
+        // ---- ОБНОВЛЕНИЕ ЛОББИ ----
         async function updateLobbyUI() {
             if (!currentLobby) return;
 
@@ -593,8 +835,6 @@
                 }
                 return;
             }
-
-            lobbyPlayers = lobby.players;
 
             document.getElementById('lobby-title').textContent = '🏠 ' + lobby.name;
             document.getElementById('lobby-info').textContent = '📊 Режим: ' + lobby.mode;
@@ -646,7 +886,7 @@
             }
         }
 
-        // ---- НАЧАЛО МАТЧА (API) ----
+        // ---- НАЧАЛО МАТЧА ----
         async function startOnlineMatch() {
             if (!currentLobby || !isHost) {
                 showMessage('❌ Только хост может начать матч!');
@@ -683,6 +923,19 @@
         // ==================== ИГРОВОЙ ДВИЖОК ========================
         // ============================================================
 
+        let ball, players, goalkeepers;
+        let homeScore = 0,
+            awayScore = 0;
+        let gameTime = 0;
+        let matchFinished = false;
+        let goalCooldown = 0;
+        let isPassing = false;
+        let passTarget = null;
+        let passTimer = 0;
+        let isShooting = false;
+        let shootTimer = 0;
+        let keys = { up: false, down: false, left: false, right: false };
+
         // ---- ИНИЦИАЛИЗАЦИЯ ----
         window.onload = function() {
             canvas = document.getElementById('gameCanvas');
@@ -703,7 +956,6 @@
             canvas.height = window.innerHeight;
         }
 
-        // ---- МЕНЮ ----
         function setupMenuButtons() {
             ['mode2x2', 'mode3x3'].forEach(id => {
                 document.getElementById(id).onclick = function() {
@@ -822,8 +1074,6 @@
         }
 
         // ---- КНОПКИ ДЕЙСТВИЙ ----
-        let keys = { up: false, down: false, left: false, right: false };
-
         function setupActionButtons() {
             document.getElementById('btn-shoot').addEventListener('touchstart', (e) => { e.preventDefault();
                 handleShoot(); });
@@ -1024,7 +1274,6 @@
         function update() {
             if (gameState !== 'playing' || matchFinished) return;
 
-            // Таймер
             gameTime += 1 / 60;
             const remaining = Math.max(0, MATCH_TIME - gameTime);
             const mins = Math.floor(remaining / 60);
@@ -1036,7 +1285,6 @@
                 return;
             }
 
-            // ---- МЯЧ ----
             ball.x += ball.vx;
             ball.y += ball.vy;
             ball.vx *= 0.98;
@@ -1056,7 +1304,6 @@
 
             checkGoals();
 
-            // ---- ПАС ----
             if (isPassing) {
                 passTimer++;
                 if (passTarget && Math.hypot(ball.x - passTarget.x, ball.y - passTarget.y) < 30) {
@@ -1088,7 +1335,6 @@
             };
             const diff = diffSettings[difficulty] || diffSettings.medium;
 
-            // ---- ИГРОКИ ----
             players.forEach((p) => {
                 if (p.isPlayer) {
                     let dx = 0,
@@ -1117,7 +1363,6 @@
                 if (p.passCooldown > 0) p.passCooldown--;
             });
 
-            // ---- ВРАТАРИ ----
             goalkeepers.forEach(gk => {
                 const targetX = gk.team === 'home' ? 60 : 1140;
                 const targetY = 350 + (ball.y - 350) * 0.15;
@@ -1145,7 +1390,6 @@
                 }
             });
 
-            // ---- СТОЛКНОВЕНИЯ С МЯЧОМ ----
             if (!isPassing && !isShooting) {
                 players.forEach(p => {
                     if (!p.hasBall && p.canGetBall) {
@@ -1168,7 +1412,7 @@
             if (goalCooldown > 0) goalCooldown--;
         }
 
-        // ---- БОТЫ (ОФФЛАЙН) ----
+        // ---- БОТЫ ----
         function updateBot(p, diff) {
             const isHome = p.team === 'home';
             const role = p.role || 'midfielder';
@@ -1420,7 +1664,7 @@
             }, 2500);
         }
 
-        // ---- ДЕЙСТВИЯ ИГРОКА ----
+        // ---- ДЕЙСТВИЯ ----
         function handleShoot() {
             const p = players.find(p => p.isPlayer);
             if (!p || !p.hasBall || matchFinished || isPassing || isShooting) return;
@@ -1542,7 +1786,6 @@
                 ctx.stroke();
             }
 
-            // Мяч
             ctx.shadowColor = 'rgba(0,0,0,0.3)';
             ctx.shadowBlur = 6;
             ctx.beginPath();
@@ -1554,7 +1797,6 @@
             ctx.stroke();
             ctx.shadowBlur = 0;
 
-            // Вратари
             goalkeepers.forEach(gk => {
                 ctx.shadowColor = 'rgba(0,0,0,0.3)';
                 ctx.shadowBlur = 6;
@@ -1575,7 +1817,6 @@
                 ctx.fillText('🧤', gk.x, gk.y - gk.radius - 8);
             });
 
-            // Игроки
             players.forEach(p => {
                 ctx.shadowColor = 'rgba(0,0,0,0.3)';
                 ctx.shadowBlur = 6;
@@ -1754,7 +1995,7 @@
             document.getElementById('leaderboard').style.display = 'none';
         }
 
-        console.log('⚽ STREET FOOTBALL LEGENDS v9.0 загружена!');
+        console.log('⚽ STREET FOOTBALL LEGENDS v10.0 загружена!');
         console.log('👤 Игрок:', playerName || 'Гость');
         console.log('⭐ Рейтинг:', playerRating);
         console.log('💎 Кристаллы:', playerCrystals);
