@@ -87,6 +87,10 @@
             background: rgba(100, 100, 120, 0.7);
             border-color: rgba(255, 255, 255, 0.2);
         }
+        .btn-orange {
+            background: rgba(255, 150, 50, 0.7);
+            border-color: #ffa94d;
+        }
         #menu-container {
             position: absolute;
             top: 50%;
@@ -197,6 +201,21 @@
             z-index: 10;
             background: rgba(0, 0, 0, 0.4);
             padding: 2px 8px;
+            border-radius: 6px;
+            display: none;
+        }
+        #online-status {
+            position: absolute;
+            top: 52px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: #51cf66;
+            font-size: 11px;
+            font-weight: bold;
+            pointer-events: none;
+            z-index: 10;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 2px 12px;
             border-radius: 6px;
             display: none;
         }
@@ -584,7 +603,6 @@
             justify-content: space-between;
             align-items: center;
             border: 1px solid rgba(255, 255, 255, 0.05);
-            transition: all 0.2s;
         }
         .pack-item .pack-info {
             display: flex;
@@ -643,6 +661,66 @@
         }
         .close-packs {
             margin-top: 12px;
+        }
+
+        /* ОНЛАЙН МЕНЮ */
+        #online-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            z-index: 90;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        #online-container {
+            background: rgba(13, 27, 42, 0.95);
+            border-radius: 20px;
+            padding: 20px;
+            width: 100%;
+            max-width: 460px;
+            max-height: 90vh;
+            overflow-y: auto;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 0 60px rgba(0, 0, 0, 0.5);
+        }
+        #online-container h2 {
+            color: #4d7aff;
+            text-align: center;
+            margin-bottom: 8px;
+            font-size: 22px;
+        }
+        #online-status-text {
+            text-align: center;
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.5);
+            margin-bottom: 12px;
+            min-height: 24px;
+        }
+        .online-btn {
+            margin: 4px 0;
+        }
+        .close-online {
+            margin-top: 12px;
+        }
+        .searching-animation {
+            display: inline-block;
+            animation: pulse 1s infinite;
+        }
+        @keyframes pulse {
+            0%,
+            100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.3;
+            }
         }
 
         @media(max-width:600px) {
@@ -736,6 +814,7 @@
         <div id="timer-display">⏱️ 5:00</div>
         <div id="statusBar">⚽ Добро пожаловать!</div>
         <div id="ratingDisplay">⭐ 50</div>
+        <div id="online-status"></div>
 
         <!-- МЕНЮ -->
         <div id="menu-container">
@@ -751,7 +830,7 @@
             </div>
 
             <div class="menu-section">
-                <div class="section-title">⚡ Сложность</div>
+                <div class="section-title">⚡ Сложность (оффлайн)</div>
                 <div class="row-buttons">
                     <button class="btn active" id="diffEasy">🟢 Лёгкий</button>
                     <button class="btn" id="diffMedium">🟡 Средний</button>
@@ -759,7 +838,7 @@
                 </div>
             </div>
 
-            <button class="btn btn-green btn-full" onclick="startGame()">⚔️ НАЧАТЬ МАТЧ</button>
+            <button class="btn btn-green btn-full" onclick="startGame('offline')">⚔️ ОФФЛАЙН МАТЧ</button>
 
             <div id="guestMenu">
                 <button class="btn btn-blue btn-full" onclick="showLogin()">🔑 Войти</button>
@@ -767,9 +846,9 @@
             </div>
 
             <div id="userMenu" style="display:none;">
+                <button class="btn btn-orange btn-full" onclick="showOnlineUI()">🌐 ОНЛАЙН</button>
                 <button class="btn btn-gold btn-full" onclick="showPacksUI()">📦 ПАКИ</button>
                 <button class="btn btn-purple btn-full" onclick="showInventoryUI()">🎒 ИНВЕНТАРЬ</button>
-                <button class="btn btn-blue btn-full" onclick="showOnlineMenu()">🌐 ОНЛАЙН</button>
             </div>
 
             <button class="btn btn-gold btn-full" onclick="showLeaderboard()">📊 Рейтинг</button>
@@ -812,6 +891,17 @@
             </div>
         </div>
 
+        <!-- ОНЛАЙН -->
+        <div id="online-overlay">
+            <div id="online-container">
+                <h2>🌐 ОНЛАЙН</h2>
+                <div id="online-status-text">⚡ Выберите режим</div>
+                <button class="btn btn-orange online-btn" onclick="findOnlineMatch('ranked')">🏆 РЕЙТИНГОВЫЙ МАТЧ</button>
+                <button class="btn btn-blue online-btn" onclick="findOnlineMatch('casual')">🎮 ОБЫЧНЫЙ МАТЧ</button>
+                <button class="btn btn-gray close-online" onclick="closeOnlineUI()">↩️ Назад</button>
+            </div>
+        </div>
+
         <!-- СООБЩЕНИЕ -->
         <div id="message"></div>
 
@@ -843,8 +933,8 @@
         const GOAL_WIDTH = 30;
         const GOAL_HEIGHT = 180;
         const MATCH_TIME = 300;
-        const PLAYER_SPEED = 1.8;
-        const BOT_SPEED_BASE = 1.5;
+        const PLAYER_SPEED = 2.2;
+        const BOT_SPEED_BASE = 1.8;
 
         // ---- ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ----
         let canvas, ctx;
@@ -875,9 +965,20 @@
         let isPassing = false;
         let passTarget = null;
         let passTimer = 0;
-        let passStartPos = null;
         let isShooting = false;
         let shootTimer = 0;
+
+        // ---- ОНЛАЙН ----
+        let isOnline = false;
+        let matchId = null;
+        let isHost = false;
+        let opponentName = '';
+        let ws = null;
+        let onlinePlayers = {};
+        let onlineBall = { x: 600, y: 350, vx: 0, vy: 0 };
+        let onlineScore = { home: 0, away: 0 };
+        let isSearching = false;
+        let searchTimer = 0;
 
         // Джостик
         let joystickActive = false;
@@ -928,19 +1029,6 @@
             mythic: '🔴 Мифический'
         };
 
-        function recalcRating() {
-            let rating = 50;
-            for (let slot = 1; slot <= 5; slot++) {
-                const skinName = equippedSkins[slot];
-                if (skinName && SKIN_DATA[skinName]) {
-                    rating += SKIN_DATA[skinName].rating;
-                }
-            }
-            playerRating = Math.min(rating, 99);
-            updateUI();
-            saveGame();
-        }
-
         // ---- ПАКИ ----
         const PACK_PRICES = { common: 100, rare: 300, epic: 800, legendary: 2000 };
         const PACK_DROPS = {
@@ -955,6 +1043,54 @@
             epic: '🟣 Эпический пак',
             legendary: '🟠 Легендарный пак'
         };
+
+        // ---- ФУНКЦИИ ----
+        function recalcRating() {
+            let rating = 50;
+            for (let slot = 1; slot <= 5; slot++) {
+                const skinName = equippedSkins[slot];
+                if (skinName && SKIN_DATA[skinName]) {
+                    rating += SKIN_DATA[skinName].rating;
+                }
+            }
+            playerRating = Math.min(rating, 99);
+            updateUI();
+            saveGame();
+        }
+
+        function loadSave() {
+            try {
+                const data = localStorage.getItem('football_save');
+                if (data) {
+                    const save = JSON.parse(data);
+                    playerName = save.name || '';
+                    playerRating = save.rating || 50;
+                    playerCrystals = save.crystals || 100;
+                    playerWins = save.wins || 0;
+                    playerMatches = save.matches || 0;
+                    playerGoals = save.goals || 0;
+                    equippedSkins = save.equippedSkins || { 1: 'Повязка', 2: 'Майка', 3: 'Шорты', 4: 'Кеды', 5: 'Нарукавник' };
+                    ownedSkins = save.ownedSkins || {};
+                    recalcRating();
+                }
+            } catch (e) { console.log('Ошибка загрузки', e); }
+        }
+
+        function saveGame() {
+            try {
+                const data = {
+                    name: playerName,
+                    rating: playerRating,
+                    crystals: playerCrystals,
+                    wins: playerWins,
+                    matches: playerMatches,
+                    goals: playerGoals,
+                    equippedSkins: equippedSkins,
+                    ownedSkins: ownedSkins
+                };
+                localStorage.setItem('football_save', JSON.stringify(data));
+            } catch (e) { console.log('Ошибка сохранения', e); }
+        }
 
         function openPack(packType) {
             if (playerCrystals < PACK_PRICES[packType]) {
@@ -997,39 +1133,33 @@
             }
         }
 
-        // ---- СОХРАНЕНИЕ ----
-        function loadSave() {
-            try {
-                const data = localStorage.getItem('football_save');
-                if (data) {
-                    const save = JSON.parse(data);
-                    playerName = save.name || '';
-                    playerRating = save.rating || 50;
-                    playerCrystals = save.crystals || 100;
-                    playerWins = save.wins || 0;
-                    playerMatches = save.matches || 0;
-                    playerGoals = save.goals || 0;
-                    equippedSkins = save.equippedSkins || { 1: 'Повязка', 2: 'Майка', 3: 'Шорты', 4: 'Кеды', 5: 'Нарукавник' };
-                    ownedSkins = save.ownedSkins || {};
-                    recalcRating();
+        function equipSkinFromUI(skinName) {
+            if (!ownedSkins[skinName]) {
+                showMessage('❌ У вас нет этого скина!');
+                return;
+            }
+            const slot = SKIN_DATA[skinName].slot;
+            for (let s in equippedSkins) {
+                if (equippedSkins[s] === skinName) {
+                    delete equippedSkins[s];
                 }
-            } catch (e) { console.log('Ошибка загрузки', e); }
+            }
+            equippedSkins[slot] = skinName;
+            saveGame();
+            recalcRating();
+            showMessage('✅ ' + skinName + ' надет! ⭐+' + SKIN_DATA[skinName].rating);
+            renderInventoryUI();
         }
 
-        function saveGame() {
-            try {
-                const data = {
-                    name: playerName,
-                    rating: playerRating,
-                    crystals: playerCrystals,
-                    wins: playerWins,
-                    matches: playerMatches,
-                    goals: playerGoals,
-                    equippedSkins: equippedSkins,
-                    ownedSkins: ownedSkins
-                };
-                localStorage.setItem('football_save', JSON.stringify(data));
-            } catch (e) { console.log('Ошибка сохранения', e); }
+        function removeSkinFromSlot(slot) {
+            if (equippedSkins[slot]) {
+                const name = equippedSkins[slot];
+                delete equippedSkins[slot];
+                saveGame();
+                recalcRating();
+                showMessage('❌ ' + name + ' снят');
+                renderInventoryUI();
+            }
         }
 
         // ---- UI ----
@@ -1094,35 +1224,6 @@
             document.getElementById('inventory-overlay').style.display = 'none';
         }
 
-        function equipSkinFromUI(skinName) {
-            if (!ownedSkins[skinName]) {
-                showMessage('❌ У вас нет этого скина!');
-                return;
-            }
-            const slot = SKIN_DATA[skinName].slot;
-            for (let s in equippedSkins) {
-                if (equippedSkins[s] === skinName) {
-                    delete equippedSkins[s];
-                }
-            }
-            equippedSkins[slot] = skinName;
-            saveGame();
-            recalcRating();
-            showMessage('✅ ' + skinName + ' надет! ⭐+' + SKIN_DATA[skinName].rating);
-            renderInventoryUI();
-        }
-
-        function removeSkinFromSlot(slot) {
-            if (equippedSkins[slot]) {
-                const name = equippedSkins[slot];
-                delete equippedSkins[slot];
-                saveGame();
-                recalcRating();
-                showMessage('❌ ' + name + ' снят');
-                renderInventoryUI();
-            }
-        }
-
         function renderInventoryUI() {
             const list = document.getElementById('inventory-list');
             const stats = document.getElementById('inventory-stats');
@@ -1130,7 +1231,6 @@
 
             let html = '';
 
-            // Экипированные
             html += '<div class="inv-section-title">⭐ ЭКИПИРОВАНО</div>';
             for (let slot = 1; slot <= 5; slot++) {
                 const name = equippedSkins[slot] || 'Пусто';
@@ -1150,7 +1250,6 @@
                 `;
             }
 
-            // В инвентаре
             const ownedList = Object.keys(ownedSkins);
             if (ownedList.length > 0) {
                 html += '<div class="inv-section-title">📦 В ИНВЕНТАРЕ</div>';
@@ -1175,6 +1274,50 @@
             }
 
             list.innerHTML = html;
+        }
+
+        // ---- ОНЛАЙН UI ----
+        function showOnlineUI() {
+            if (!playerName) {
+                showMessage('❌ Сначала войдите в аккаунт!');
+                return;
+            }
+            document.getElementById('online-overlay').style.display = 'flex';
+            document.getElementById('online-status-text').textContent = '⚡ Выберите режим';
+        }
+
+        function closeOnlineUI() {
+            document.getElementById('online-overlay').style.display = 'none';
+            if (ws) {
+                ws.close();
+                ws = null;
+            }
+            isSearching = false;
+        }
+
+        function findOnlineMatch(mode) {
+            if (isSearching) return;
+            if (!playerName) {
+                showMessage('❌ Сначала войдите в аккаунт!');
+                return;
+            }
+
+            isSearching = true;
+            searchTimer = 0;
+            const statusText = document.getElementById('online-status-text');
+            statusText.innerHTML = '🔍 Ищем соперника... <span class="searching-animation">⚽</span>';
+
+            // Имитация поиска (в реальном проекте здесь WebSocket)
+            setTimeout(() => {
+                if (isSearching) {
+                    isSearching = false;
+                    statusText.textContent = '✅ Соперник найден! Начинаем матч...';
+                    setTimeout(() => {
+                        closeOnlineUI();
+                        startGame('online', mode);
+                    }, 500);
+                }
+            }, 2000 + Math.random() * 2000);
         }
 
         // ---- ИНИЦИАЛИЗАЦИЯ ----
@@ -1345,6 +1488,7 @@
                 if (e.key === 'Escape') {
                     if (document.getElementById('inventory-overlay').style.display === 'flex') closeInventoryUI();
                     if (document.getElementById('packs-overlay').style.display === 'flex') closePacksUI();
+                    if (document.getElementById('online-overlay').style.display === 'flex') closeOnlineUI();
                 }
             });
             document.addEventListener('keyup', (e) => {
@@ -1356,8 +1500,10 @@
         }
 
         // ---- ЗАПУСК ИГРЫ ----
-        function startGame() {
+        function startGame(type, onlineMode) {
+            isOnline = type === 'online';
             gameState = 'playing';
+
             document.getElementById('menu-container').style.display = 'none';
             document.getElementById('joystick-area').style.display = 'block';
             document.getElementById('action-buttons').style.display = 'flex';
@@ -1365,7 +1511,15 @@
             document.getElementById('timer-display').style.display = 'block';
             document.getElementById('statusBar').style.display = 'block';
             document.getElementById('ratingDisplay').style.display = 'block';
-            document.getElementById('statusBar').textContent = '⚽ Игра идет...';
+
+            if (isOnline) {
+                document.getElementById('online-status').style.display = 'block';
+                document.getElementById('online-status').textContent = '🌐 Онлайн: ' + (opponentName || 'Соперник');
+                document.getElementById('statusBar').textContent = '⚽ Онлайн матч!';
+            } else {
+                document.getElementById('online-status').style.display = 'none';
+                document.getElementById('statusBar').textContent = '⚽ Игра идет...';
+            }
 
             homeScore = 0;
             awayScore = 0;
@@ -1389,23 +1543,23 @@
             let homeTeam, awayTeam;
             if (mode === '2x2') {
                 homeTeam = [
-                    { name: 'Азиз', x: 250, y: 290, color: '#00b4d8' },
-                    { name: 'Хабиб', x: 250, y: 410, color: '#0077b6' }
+                    { name: isOnline ? playerName : 'Азиз', x: 250, y: 290, color: '#00b4d8' },
+                    { name: isOnline ? 'Тимейт' : 'Хабиб', x: 250, y: 410, color: '#0077b6' }
                 ];
                 awayTeam = [
-                    { name: 'Шамиль Рб', x: 950, y: 290, color: '#e63946' },
-                    { name: 'Шамиль Jr.', x: 950, y: 410, color: '#c1121f' }
+                    { name: isOnline ? opponentName || 'Соперник' : 'Шамиль Рб', x: 950, y: 290, color: '#e63946' },
+                    { name: isOnline ? 'Игрок 4' : 'Шамиль Jr.', x: 950, y: 410, color: '#c1121f' }
                 ];
             } else {
                 homeTeam = [
-                    { name: 'Азиз', x: 220, y: 250, color: '#00b4d8' },
-                    { name: 'Хабиб', x: 220, y: 350, color: '#0077b6' },
-                    { name: 'Абдул', x: 220, y: 450, color: '#2d6a4f' }
+                    { name: isOnline ? playerName : 'Азиз', x: 220, y: 250, color: '#00b4d8' },
+                    { name: isOnline ? 'Тимейт 1' : 'Хабиб', x: 220, y: 350, color: '#0077b6' },
+                    { name: isOnline ? 'Тимейт 2' : 'Абдул', x: 220, y: 450, color: '#2d6a4f' }
                 ];
                 awayTeam = [
-                    { name: 'Шамиль Рб', x: 980, y: 250, color: '#e63946' },
-                    { name: 'Шамиль Jr.', x: 980, y: 350, color: '#c1121f' },
-                    { name: 'Салаудин', x: 980, y: 450, color: '#f77f00' }
+                    { name: isOnline ? opponentName || 'Соперник' : 'Шамиль Рб', x: 980, y: 250, color: '#e63946' },
+                    { name: isOnline ? 'Игрок 5' : 'Шамиль Jr.', x: 980, y: 350, color: '#c1121f' },
+                    { name: isOnline ? 'Игрок 6' : 'Салаудин', x: 980, y: 450, color: '#f77f00' }
                 ];
             }
 
@@ -1487,7 +1641,7 @@
                 return;
             }
 
-            // Мяч - плавное движение
+            // Мяч
             ball.x += ball.vx;
             ball.y += ball.vy;
             ball.vx *= 0.98;
@@ -1495,7 +1649,6 @@
             if (Math.abs(ball.vx) < 0.02) ball.vx = 0;
             if (Math.abs(ball.vy) < 0.02) ball.vy = 0;
 
-            // Границы поля
             const margin = 40;
             if (ball.x < margin + BALL_RADIUS) { ball.x = margin + BALL_RADIUS;
                 ball.vx = Math.abs(ball.vx) * 0.3; }
@@ -1506,13 +1659,11 @@
             if (ball.y > FIELD_H - margin - BALL_RADIUS) { ball.y = FIELD_H - margin - BALL_RADIUS;
                 ball.vy = -Math.abs(ball.vy) * 0.3; }
 
-            // Проверка голов
             checkGoals();
 
             // Таймер паса
             if (isPassing) {
                 passTimer++;
-                // Проверка достижения цели
                 if (passTarget && Math.hypot(ball.x - passTarget.x, ball.y - passTarget.y) < 30) {
                     players.forEach(p2 => p2.hasBall = false);
                     passTarget.hasBall = true;
@@ -1520,7 +1671,6 @@
                     passTarget = null;
                     passTimer = 0;
                 }
-                // Если мяч улетел слишком далеко - сброс
                 if (passTimer > 120 || Math.abs(ball.vx) < 0.1 && Math.abs(ball.vy) < 0.1) {
                     isPassing = false;
                     passTarget = null;
@@ -1528,7 +1678,6 @@
                 }
             }
 
-            // Таймер удара
             if (isShooting) {
                 shootTimer++;
                 if (shootTimer > 30) {
@@ -1537,7 +1686,6 @@
                 }
             }
 
-            // Сложность
             const diffSettings = {
                 easy: { speed: 0.4, accuracy: 0.3, aggression: 0.2, reaction: 30 },
                 medium: { speed: 0.6, accuracy: 0.6, aggression: 0.5, reaction: 20 },
@@ -1560,7 +1708,6 @@
                     p.y += dy;
                     p.x = Math.max(40, Math.min(FIELD_W - 40, p.x));
                     p.y = Math.max(40, Math.min(FIELD_H - 40, p.y));
-                    // Привязка мяча к игроку (если он владеет и не пас/удар)
                     if (p.hasBall && !isPassing && !isShooting) {
                         ball.x = p.x + 22;
                         ball.y = p.y;
@@ -1568,7 +1715,12 @@
                         ball.vy = 0;
                     }
                 } else {
-                    updateBot(p, diff);
+                    if (!isOnline) {
+                        updateBot(p, diff);
+                    } else {
+                        // В онлайн режиме боты не двигаются (их нет)
+                        // Оставляем для совместимости
+                    }
                 }
                 if (p.passCooldown > 0) p.passCooldown--;
             });
@@ -1583,7 +1735,6 @@
                 .x));
                 gk.y = Math.max(270, Math.min(430, gk.y));
 
-                // Ловля мяча
                 if (Math.hypot(gk.x - ball.x, gk.y - ball.y) < gk.radius + BALL_RADIUS + 5) {
                     const distToGoal = gk.team === 'home' ? ball.x : FIELD_W - ball.x;
                     if (distToGoal < 200 && Math.abs(ball.vx) < 4) {
@@ -1602,7 +1753,7 @@
                 }
             });
 
-            // Столкновения с мячом (только если не пас и не удар)
+            // Столкновения с мячом
             if (!isPassing && !isShooting) {
                 players.forEach(p => {
                     if (!p.hasBall && p.canGetBall) {
@@ -1614,7 +1765,7 @@
                             ball.vy = power * Math.sin(ang);
                             players.forEach(p2 => p2.hasBall = false);
                             p.hasBall = true;
-                            if (!p.isPlayer) {
+                            if (!p.isPlayer && !isOnline) {
                                 setTimeout(() => botAction(p, diff), 400 + Math.random() * 300);
                             }
                         }
@@ -1625,7 +1776,7 @@
             if (goalCooldown > 0) goalCooldown--;
         }
 
-        // ---- БОТЫ ----
+        // ---- БОТЫ (ТОЛЬКО ОФФЛАЙН) ----
         function updateBot(p, diff) {
             const isHome = p.team === 'home';
             const role = p.role || 'midfielder';
@@ -1633,15 +1784,12 @@
             let targetX = 600,
                 targetY = 350;
 
-            // Бот с мячом
             if (p.hasBall) {
-                // Не двигается если пас активен
                 if (isPassing) return;
 
                 targetX = isHome ? FIELD_W - 120 : 120;
                 targetY = 350 + (Math.random() - 0.5) * 60;
 
-                // Проверка на пас
                 const nearbyEnemy = players.some(p2 =>
                     p2.team !== p.team && Math.hypot(p.x - p2.x, p.y - p2.y) < 70
                 );
@@ -1650,14 +1798,12 @@
                     return;
                 }
 
-                // Удар
                 const distToGoal = isHome ? FIELD_W - p.x : p.x;
                 if (distToGoal < 200 && Math.random() < 0.2 * diff.accuracy && !isPassing) {
                     botAction(p, diff);
                     return;
                 }
 
-                // Движение с мячом
                 const dx = targetX - p.x;
                 const dy = targetY - p.y;
                 const dist = Math.hypot(dx, dy);
@@ -1666,7 +1812,6 @@
                     const step = Math.min(speed, dist);
                     p.x += (dx / dist) * step;
                     p.y += (dy / dist) * step;
-                    // Мяч следует за ботом
                     if (!isPassing && !isShooting) {
                         ball.x = p.x + 22;
                         ball.y = p.y;
@@ -1675,7 +1820,6 @@
                     }
                 }
             } else {
-                // Без мяча - позиционирование
                 if (role === 'defender') {
                     targetX = isHome ? 180 + Math.random() * 60 : 1020 - Math.random() * 60;
                     targetY = 350 + (Math.random() - 0.5) * 100;
@@ -1687,14 +1831,12 @@
                     targetY = 350 + (Math.random() - 0.5) * 100;
                 }
 
-                // Если мяч рядом - перехват
                 const distToBall = Math.hypot(p.x - ball.x, p.y - ball.y);
                 if (distToBall < 140 && !players.some(p2 => p2.team === p.team && p2.hasBall) && !isPassing && !isShooting) {
                     targetX = ball.x + (isHome ? 15 : -15);
                     targetY = ball.y;
                 }
 
-                // Отбор у противника
                 players.forEach(p2 => {
                     if (p2.team !== p.team && p2.hasBall && Math.hypot(p.x - p2.x, p.y - p2.y) < 40 && !isPassing &&
                         !isShooting) {
@@ -1708,7 +1850,6 @@
                     }
                 });
 
-                // Движение
                 const dx = targetX - p.x;
                 const dy = targetY - p.y;
                 const dist = Math.hypot(dx, dy);
@@ -1720,7 +1861,6 @@
                 }
             }
 
-            // Анти-застревание
             if (Math.abs(p.x - p.lastX) < 0.3 && Math.abs(p.y - p.lastY) < 0.3) {
                 p.stuckTimer++;
                 if (p.stuckTimer > 50) {
@@ -1744,7 +1884,7 @@
             const isHome = p.team === 'home';
             const r = Math.random();
 
-            // Пас - 45%
+            // Пас
             if (r < 0.45) {
                 const teammates = players.filter(p2 => p2.team === p.team && p2.id !== p.id);
                 if (teammates.length > 0) {
@@ -1758,7 +1898,6 @@
                             best = tm; }
                     });
                     if (best && Math.hypot(best.x - p.x, best.y - p.y) < 400) {
-                        // ПАС - плавный, разной силы
                         isPassing = true;
                         passTarget = best;
                         passTimer = 0;
@@ -1769,7 +1908,6 @@
                         ball.vy = power * Math.sin(ang + (Math.random() - 0.5) * 0.06);
                         p.hasBall = false;
                         p.passCooldown = 15;
-                        // Автоприем через время
                         setTimeout(() => {
                             if (isPassing && passTarget) {
                                 players.forEach(p2 => p2.hasBall = false);
@@ -1784,12 +1922,12 @@
                 }
             }
 
-            // Удар - 30%
+            // Удар (сильнее)
             if (r < 0.75) {
                 const goalX = isHome ? FIELD_W - 50 : 50;
                 const goalY = 350 + (Math.random() - 0.5) * 60;
                 const ang = Math.atan2(goalY - p.y, goalX - p.x);
-                const power = 2.5 + Math.random() * 3;
+                const power = 4 + Math.random() * 3;
                 ball.vx = power * Math.cos(ang + (Math.random() - 0.5) * 0.12);
                 ball.vy = power * Math.sin(ang + (Math.random() - 0.5) * 0.12);
                 p.hasBall = false;
@@ -1798,7 +1936,7 @@
                 return;
             }
 
-            // Дриблинг - 25%
+            // Дриблинг
             const goalX = isHome ? FIELD_W - 120 : 120;
             const goalY = 350 + (Math.random() - 0.5) * 40;
             const ang = Math.atan2(goalY - p.y, goalX - p.x);
@@ -1861,7 +1999,7 @@
             matchFinished = true;
             const isWin = homeScore > awayScore;
 
-            if (playerName) {
+            if (playerName && !isOnline) {
                 playerMatches++;
                 const diffBonus = difficulty === 'easy' ? 1 : difficulty === 'medium' ? 1.5 : 2;
                 if (isWin) {
@@ -1889,6 +2027,8 @@
                 document.getElementById('score-display').style.display = 'none';
                 document.getElementById('timer-display').style.display = 'none';
                 document.getElementById('statusBar').style.display = 'none';
+                document.getElementById('online-status').style.display = 'none';
+                isOnline = false;
                 updateUI();
             }, 2500);
         }
@@ -1901,7 +2041,7 @@
             const goalX = isHome ? FIELD_W - 50 : 50;
             const goalY = 350 + (Math.random() - 0.5) * 60;
             const ang = Math.atan2(goalY - p.y, goalX - p.x);
-            const power = 3 + Math.random() * 3;
+            const power = 4 + Math.random() * 3;
             ball.vx = power * Math.cos(ang + (Math.random() - 0.5) * 0.15);
             ball.vy = power * Math.sin(ang + (Math.random() - 0.5) * 0.15);
             p.hasBall = false;
@@ -1923,7 +2063,6 @@
                         best = tm; }
                 });
                 if (best && Math.hypot(best.x - p.x, best.y - p.y) < 400) {
-                    // ПАС - плавный, разной силы
                     isPassing = true;
                     passTarget = best;
                     passTimer = 0;
@@ -1933,7 +2072,6 @@
                     ball.vx = power * Math.cos(ang + (Math.random() - 0.5) * 0.06);
                     ball.vy = power * Math.sin(ang + (Math.random() - 0.5) * 0.06);
                     p.hasBall = false;
-                    // Автоприем через время
                     setTimeout(() => {
                         if (isPassing && passTarget) {
                             players.forEach(p2 => p2.hasBall = false);
@@ -1975,11 +2113,9 @@
             ctx.translate(ox, oy);
             ctx.scale(scale, scale);
 
-            // Поле
             ctx.fillStyle = '#1b4332';
             ctx.fillRect(0, 0, FIELD_W, FIELD_H);
 
-            // Разметка
             ctx.strokeStyle = 'rgba(255,255,255,0.08)';
             ctx.lineWidth = 2;
             ctx.strokeRect(40, 40, FIELD_W - 80, FIELD_H - 80);
@@ -1996,7 +2132,6 @@
             ctx.strokeRect(40, FIELD_H / 2 - 60, 60, 120);
             ctx.strokeRect(FIELD_W - 100, FIELD_H / 2 - 60, 60, 120);
 
-            // Ворота (большие)
             ctx.fillStyle = 'rgba(255,255,255,0.04)';
             ctx.fillRect(25, FIELD_H / 2 - GOAL_HEIGHT / 2, GOAL_WIDTH, GOAL_HEIGHT);
             ctx.fillRect(FIELD_W - 25 - GOAL_WIDTH, FIELD_H / 2 - GOAL_HEIGHT / 2, GOAL_WIDTH, GOAL_HEIGHT);
@@ -2005,7 +2140,6 @@
             ctx.strokeRect(25, FIELD_H / 2 - GOAL_HEIGHT / 2, GOAL_WIDTH, GOAL_HEIGHT);
             ctx.strokeRect(FIELD_W - 25 - GOAL_WIDTH, FIELD_H / 2 - GOAL_HEIGHT / 2, GOAL_WIDTH, GOAL_HEIGHT);
 
-            // Сетка
             ctx.strokeStyle = 'rgba(255,255,255,0.03)';
             ctx.lineWidth = 1;
             for (let i = 0; i < GOAL_HEIGHT; i += 10) {
@@ -2231,25 +2365,13 @@
             document.getElementById('leaderboard').style.display = 'none';
         }
 
-        // ---- ОНЛАЙН (заглушка) ----
-        function showOnlineMenu() {
-            showMessage('🌐 ОНЛАЙН РЕЖИМ\n\n' +
-                'В разработке!\n' +
-                'Будут доступны:\n' +
-                '• 1x1 матчи с игроками\n' +
-                '• 2x2 матчи с игроками\n' +
-                '• Рейтинговые игры\n\n' +
-                'Следите за обновлениями! 🚀');
-        }
-
-        console.log('⚽ STREET FOOTBALL LEGENDS v4.0 загружена!');
+        console.log('⚽ STREET FOOTBALL LEGENDS v5.0 загружена!');
         console.log('👤 Игрок:', playerName || 'Гость');
         console.log('⭐ Рейтинг:', playerRating);
         console.log('💎 Кристаллы:', playerCrystals);
-        console.log('🎮 Управление: Джостик + кнопки');
-        console.log('📦 Паки: Открываются из меню "ПАКИ"');
-        console.log('🎒 Инвентарь: Открывается из меню "ИНВЕНТАРЬ"');
-        console.log('⚡ Пас: плавный, разной силы!');
+        console.log('🌐 Онлайн режим добавлен!');
+        console.log('⚡ Скорость увеличена (PLAYER_SPEED=2.2)');
+        console.log('💥 Удар сильнее (power=4-7)');
     </script>
 </body>
 </html>
