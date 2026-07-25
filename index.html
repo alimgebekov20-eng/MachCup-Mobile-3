@@ -1220,30 +1220,35 @@
         let isOnline = false;
         let opponentName = '';
 
-        // ---- API ----
-        const SERVER_URL = window.location.origin;
+        // ============================================================
+// ==================== API ====================================
+// ============================================================
 
-        async function apiCall(endpoint, data) {
-            try {
-                const res = await fetch(SERVER_URL + endpoint, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(data)
-                });
-                return await res.json();
-            } catch (e) {
-                return { error: 'Ошибка соединения с сервером' };
-            }
-        }
+const SERVER_URL = 'https://machcup-mobile-4.onrender.com';
 
-        async function apiGet(endpoint) {
-            try {
-                const res = await fetch(SERVER_URL + endpoint);
-                return await res.json();
-            } catch (e) {
-                return { error: 'Ошибка соединения с сервером' };
-            }
-        }
+async function apiCall(endpoint, data) {
+    try {
+        const res = await fetch(SERVER_URL + endpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        return await res.json();
+    } catch (e) {
+        console.log('API Error:', e);
+        return { error: 'Ошибка соединения с сервером' };
+    }
+}
+
+async function apiGet(endpoint) {
+    try {
+        const res = await fetch(SERVER_URL + endpoint);
+        return await res.json();
+    } catch (e) {
+        console.log('API Error:', e);
+        return { error: 'Ошибка соединения с сервером' };
+    }
+}
 
         // Джостик
         let joystickActive = false;
