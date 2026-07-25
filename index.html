@@ -696,7 +696,7 @@
             margin-bottom: 8px;
             font-size: 22px;
         }
-        #online-status-text {
+        .online-status-text {
             text-align: center;
             font-size: 14px;
             color: rgba(255, 255, 255, 0.5);
@@ -709,18 +709,217 @@
         .close-online {
             margin-top: 12px;
         }
-        .searching-animation {
-            display: inline-block;
-            animation: pulse 1s infinite;
+
+        /* ЛОББИ */
+        #lobby-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            z-index: 95;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
         }
-        @keyframes pulse {
-            0%,
-            100% {
-                opacity: 1;
-            }
-            50% {
-                opacity: 0.3;
-            }
+        #lobby-container {
+            background: rgba(13, 27, 42, 0.95);
+            border-radius: 20px;
+            padding: 20px;
+            width: 100%;
+            max-width: 460px;
+            max-height: 90vh;
+            overflow-y: auto;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 0 60px rgba(0, 0, 0, 0.5);
+        }
+        #lobby-container h2 {
+            color: #ffd700;
+            text-align: center;
+            margin-bottom: 8px;
+            font-size: 20px;
+        }
+        .lobby-info {
+            text-align: center;
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.6);
+            margin-bottom: 12px;
+        }
+        .lobby-players {
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 10px;
+            padding: 10px;
+            margin-bottom: 12px;
+        }
+        .lobby-player {
+            padding: 6px 10px;
+            margin: 3px 0;
+            border-radius: 6px;
+            background: rgba(255, 255, 255, 0.05);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .lobby-player .host-badge {
+            color: #ffd700;
+            font-size: 11px;
+        }
+        .lobby-player .ready-badge {
+            color: #51cf66;
+            font-size: 11px;
+        }
+        .lobby-player .waiting-badge {
+            color: rgba(255, 255, 255, 0.3);
+            font-size: 11px;
+        }
+
+        /* СОЗДАНИЕ ЛОББИ */
+        #create-lobby-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            z-index: 92;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        #create-lobby-container {
+            background: rgba(13, 27, 42, 0.95);
+            border-radius: 20px;
+            padding: 20px;
+            width: 100%;
+            max-width: 460px;
+            max-height: 90vh;
+            overflow-y: auto;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 0 60px rgba(0, 0, 0, 0.5);
+        }
+        #create-lobby-container h2 {
+            color: #ffd700;
+            text-align: center;
+            margin-bottom: 12px;
+            font-size: 20px;
+        }
+        #create-lobby-container input {
+            width: 100%;
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.06);
+            color: white;
+            font-size: 14px;
+            pointer-events: auto;
+            outline: none;
+        }
+        #create-lobby-container input::placeholder {
+            color: rgba(255, 255, 255, 0.25);
+        }
+        #create-lobby-container input:focus {
+            border-color: #ffd700;
+        }
+        .mode-select {
+            display: flex;
+            gap: 10px;
+            margin: 10px 0;
+        }
+        .mode-select .btn {
+            flex: 1;
+            padding: 8px;
+            font-size: 13px;
+        }
+        .mode-select .btn.active {
+            background: rgba(255, 215, 0, 0.3) !important;
+            border-color: #ffd700 !important;
+        }
+
+        /* ПОИСК ЛОББИ */
+        #find-lobby-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            z-index: 93;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        #find-lobby-container {
+            background: rgba(13, 27, 42, 0.95);
+            border-radius: 20px;
+            padding: 20px;
+            width: 100%;
+            max-width: 460px;
+            max-height: 90vh;
+            overflow-y: auto;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 0 60px rgba(0, 0, 0, 0.5);
+        }
+        #find-lobby-container h2 {
+            color: #4d7aff;
+            text-align: center;
+            margin-bottom: 12px;
+            font-size: 20px;
+        }
+        .lobby-item {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            padding: 12px;
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .lobby-item .lobby-info-text {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+        }
+        .lobby-item .lobby-name {
+            font-weight: bold;
+            font-size: 14px;
+        }
+        .lobby-item .lobby-desc {
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.4);
+        }
+        .lobby-item .join-btn {
+            background: rgba(81, 207, 102, 0.2);
+            border: 1px solid rgba(81, 207, 102, 0.3);
+            border-radius: 8px;
+            padding: 6px 16px;
+            color: #51cf66;
+            font-weight: bold;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .lobby-item .join-btn:active {
+            transform: scale(0.95);
+            background: rgba(81, 207, 102, 0.4);
+        }
+        .lobby-item .join-btn:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+        .refresh-btn {
+            margin-bottom: 10px;
         }
 
         @media(max-width:600px) {
@@ -763,6 +962,14 @@
                 font-size: 10px;
                 padding: 5px 6px;
                 min-width: 45px;
+            }
+            .lobby-item {
+                flex-wrap: wrap;
+                gap: 8px;
+            }
+            .lobby-item .join-btn {
+                width: 100%;
+                text-align: center;
             }
         }
         @media(max-width:400px) {
@@ -838,7 +1045,7 @@
                 </div>
             </div>
 
-            <button class="btn btn-green btn-full" onclick="startGame('offline')">⚔️ ОФФЛАЙН МАТЧ</button>
+            <button class="btn btn-green btn-full" onclick="startOfflineGame()">⚔️ ОФФЛАЙН МАТЧ</button>
 
             <div id="guestMenu">
                 <button class="btn btn-blue btn-full" onclick="showLogin()">🔑 Войти</button>
@@ -895,10 +1102,48 @@
         <div id="online-overlay">
             <div id="online-container">
                 <h2>🌐 ОНЛАЙН</h2>
-                <div id="online-status-text">⚡ Выберите режим</div>
-                <button class="btn btn-orange online-btn" onclick="findOnlineMatch('ranked')">🏆 РЕЙТИНГОВЫЙ МАТЧ</button>
-                <button class="btn btn-blue online-btn" onclick="findOnlineMatch('casual')">🎮 ОБЫЧНЫЙ МАТЧ</button>
+                <div class="online-status-text" id="online-status-text">⚡ Выберите режим</div>
+                <button class="btn btn-orange online-btn" onclick="showCreateLobbyUI()">🏠 СОЗДАТЬ ЛОББИ</button>
+                <button class="btn btn-blue online-btn" onclick="showFindLobbyUI()">🔍 НАЙТИ ЛОББИ</button>
                 <button class="btn btn-gray close-online" onclick="closeOnlineUI()">↩️ Назад</button>
+            </div>
+        </div>
+
+        <!-- СОЗДАНИЕ ЛОББИ -->
+        <div id="create-lobby-overlay">
+            <div id="create-lobby-container">
+                <h2>🏠 СОЗДАНИЕ ЛОББИ</h2>
+                <input type="text" id="lobbyNameInput" placeholder="Название лобби (необязательно)">
+                <div class="mode-select">
+                    <button class="btn active" onclick="selectLobbyMode('1x1', this)">⚔️ 1x1</button>
+                    <button class="btn" onclick="selectLobbyMode('2x2', this)">⚔️ 2x2</button>
+                </div>
+                <button class="btn btn-green" onclick="createLobby()">✅ СОЗДАТЬ</button>
+                <button class="btn btn-gray" onclick="closeCreateLobbyUI()">↩️ Назад</button>
+                <div id="create-lobby-msg" style="text-align:center;margin-top:8px;font-size:12px;color:rgba(255,255,255,0.4);"></div>
+            </div>
+        </div>
+
+        <!-- ПОИСК ЛОББИ -->
+        <div id="find-lobby-overlay">
+            <div id="find-lobby-container">
+                <h2>🔍 ПОИСК ЛОББИ</h2>
+                <button class="btn btn-blue refresh-btn" onclick="findLobbies()">🔄 Обновить список</button>
+                <div id="lobby-list"></div>
+                <button class="btn btn-gray" onclick="closeFindLobbyUI()">↩️ Назад</button>
+            </div>
+        </div>
+
+        <!-- ЛОББИ -->
+        <div id="lobby-overlay">
+            <div id="lobby-container">
+                <h2 id="lobby-title">🏠 ЛОББИ</h2>
+                <div class="lobby-info" id="lobby-info">📊 Режим: 1x1</div>
+                <div class="lobby-players" id="lobby-players-list"></div>
+                <div class="lobby-info" id="lobby-status-text">⏳ Ожидание игроков...</div>
+                <button class="btn btn-green" id="lobby-start-btn" onclick="startOnlineMatch()" style="display:none;">▶️ НАЧАТЬ МАТЧ</button>
+                <button class="btn btn-red" onclick="leaveLobby()">🚪 ВЫЙТИ</button>
+                <div id="lobby-msg" style="text-align:center;margin-top:8px;font-size:12px;color:rgba(255,255,255,0.4);"></div>
             </div>
         </div>
 
@@ -947,6 +1192,7 @@
         let playerWins = 0,
             playerMatches = 0,
             playerGoals = 0;
+        let lobbyMode = '1x1';
 
         let equippedSkins = { 1: 'Повязка', 2: 'Майка', 3: 'Шорты', 4: 'Кеды', 5: 'Нарукавник' };
         let ownedSkins = {};
@@ -960,8 +1206,6 @@
         let gameTime = 0;
         let matchFinished = false;
         let goalCooldown = 0;
-
-        // ---- СИСТЕМА ПАСА И УДАРА ----
         let isPassing = false;
         let passTarget = null;
         let passTimer = 0;
@@ -969,16 +1213,13 @@
         let shootTimer = 0;
 
         // ---- ОНЛАЙН ----
-        let isOnline = false;
-        let matchId = null;
+        let onlineLobbies = {};
+        let currentLobby = null;
+        let isInLobby = false;
         let isHost = false;
+        let onlineMatchStarted = false;
+        let isOnline = false;
         let opponentName = '';
-        let ws = null;
-        let onlinePlayers = {};
-        let onlineBall = { x: 600, y: 350, vx: 0, vy: 0 };
-        let onlineScore = { home: 0, away: 0 };
-        let isSearching = false;
-        let searchTimer = 0;
 
         // Джостик
         let joystickActive = false;
@@ -1092,6 +1333,7 @@
             } catch (e) { console.log('Ошибка сохранения', e); }
         }
 
+        // ---- ПАКИ ----
         function openPack(packType) {
             if (playerCrystals < PACK_PRICES[packType]) {
                 showMessage('❌ Недостаточно кристаллов! Нужно ' + PACK_PRICES[packType] + '💎');
@@ -1276,6 +1518,10 @@
             list.innerHTML = html;
         }
 
+        // ============================================================
+        // ==================== ОНЛАЙН СИСТЕМА ========================
+        // ============================================================
+
         // ---- ОНЛАЙН UI ----
         function showOnlineUI() {
             if (!playerName) {
@@ -1288,37 +1534,271 @@
 
         function closeOnlineUI() {
             document.getElementById('online-overlay').style.display = 'none';
-            if (ws) {
-                ws.close();
-                ws = null;
-            }
-            isSearching = false;
         }
 
-        function findOnlineMatch(mode) {
-            if (isSearching) return;
+        // ---- СОЗДАНИЕ ЛОББИ UI ----
+        function showCreateLobbyUI() {
+            closeOnlineUI();
+            document.getElementById('create-lobby-overlay').style.display = 'flex';
+            document.getElementById('lobbyNameInput').value = 'Лобби ' + playerName;
+            document.getElementById('create-lobby-msg').textContent = '';
+            // Выбираем 1x1 по умолчанию
+            document.querySelectorAll('#create-lobby-container .mode-select .btn').forEach(b => b.classList.remove('active'));
+            document.querySelector('#create-lobby-container .mode-select .btn:first-child').classList.add('active');
+            lobbyMode = '1x1';
+        }
+
+        function closeCreateLobbyUI() {
+            document.getElementById('create-lobby-overlay').style.display = 'none';
+            showOnlineUI();
+        }
+
+        function selectLobbyMode(mode, btn) {
+            document.querySelectorAll('#create-lobby-container .mode-select .btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            lobbyMode = mode;
+        }
+
+        // ---- ПОИСК ЛОББИ UI ----
+        function showFindLobbyUI() {
+            closeOnlineUI();
+            document.getElementById('find-lobby-overlay').style.display = 'flex';
+            findLobbies();
+        }
+
+        function closeFindLobbyUI() {
+            document.getElementById('find-lobby-overlay').style.display = 'none';
+            showOnlineUI();
+        }
+
+        // ---- ЛОББИ UI ----
+        function showLobbyUI() {
+            document.getElementById('lobby-overlay').style.display = 'flex';
+            updateLobbyUI();
+        }
+
+        function closeLobbyUI() {
+            document.getElementById('lobby-overlay').style.display = 'none';
+        }
+
+        // ---- СОЗДАНИЕ ЛОББИ ----
+        function createLobby() {
+            const lobbyName = document.getElementById('lobbyNameInput').value.trim() || 'Лобби ' + playerName;
+
             if (!playerName) {
                 showMessage('❌ Сначала войдите в аккаунт!');
                 return;
             }
 
-            isSearching = true;
-            searchTimer = 0;
-            const statusText = document.getElementById('online-status-text');
-            statusText.innerHTML = '🔍 Ищем соперника... <span class="searching-animation">⚽</span>';
+            const lobbyId = 'lobby_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4);
+            onlineLobbies[lobbyId] = {
+                id: lobbyId,
+                name: lobbyName,
+                host: playerName,
+                mode: lobbyMode,
+                players: [playerName],
+                status: 'waiting',
+                createdAt: Date.now()
+            };
 
-            // Имитация поиска (в реальном проекте здесь WebSocket)
-            setTimeout(() => {
-                if (isSearching) {
-                    isSearching = false;
-                    statusText.textContent = '✅ Соперник найден! Начинаем матч...';
-                    setTimeout(() => {
-                        closeOnlineUI();
-                        startGame('online', mode);
-                    }, 500);
-                }
-            }, 2000 + Math.random() * 2000);
+            currentLobby = lobbyId;
+            isInLobby = true;
+            isHost = true;
+
+            closeCreateLobbyUI();
+            showLobbyUI();
+            showMessage('✅ Лобби "' + lobbyName + '" создано! Ожидайте игрока...');
+            updateLobbyUI();
         }
+
+        // ---- ПОИСК ЛОББИ ----
+        function findLobbies() {
+            const list = document.getElementById('lobby-list');
+            if (!list) return;
+
+            const availableLobbies = Object.values(onlineLobbies).filter(l =>
+                l.status === 'waiting' && l.players.length < 2 && l.host !== playerName
+            );
+
+            if (availableLobbies.length === 0) {
+                list.innerHTML = '<div style="text-align:center;color:rgba(255,255,255,0.3);padding:20px;">Нет доступных лобби</div>';
+                return;
+            }
+
+            let html = '';
+            availableLobbies.forEach(lobby => {
+                const isFull = lobby.players.length >= 2;
+                html += `
+                    <div class="lobby-item">
+                        <div class="lobby-info-text">
+                            <div class="lobby-name">${lobby.name}</div>
+                            <div class="lobby-desc">👤 ${lobby.host} | ${lobby.mode} | ${lobby.players.length}/2 игроков</div>
+                        </div>
+                        ${!isFull ? 
+                            `<button class="join-btn" onclick="joinLobby('${lobby.id}')">🔗 Присоединиться</button>` : 
+                            `<span style="color:rgba(255,255,255,0.2);font-size:12px;">🟢 Полно</span>`
+                        }
+                    </div>
+                `;
+            });
+
+            list.innerHTML = html;
+        }
+
+        // ---- ПРИСОЕДИНЕНИЕ К ЛОББИ ----
+        function joinLobby(lobbyId) {
+            const lobby = onlineLobbies[lobbyId];
+            if (!lobby) {
+                showMessage('❌ Лобби не найдено!');
+                return;
+            }
+
+            if (lobby.players.length >= 2) {
+                showMessage('❌ Лобби уже заполнено!');
+                return;
+            }
+
+            if (lobby.status === 'playing') {
+                showMessage('❌ Матч уже идёт!');
+                return;
+            }
+
+            if (lobby.players.includes(playerName)) {
+                showMessage('❌ Вы уже в этом лобби!');
+                return;
+            }
+
+            lobby.players.push(playerName);
+            currentLobby = lobbyId;
+            isInLobby = true;
+            isHost = false;
+
+            closeFindLobbyUI();
+            showLobbyUI();
+            showMessage('✅ Вы присоединились к лобби "' + lobby.name + '"!');
+            updateLobbyUI();
+        }
+
+        // ---- ВЫХОД ИЗ ЛОББИ ----
+        function leaveLobby() {
+            if (!currentLobby) return;
+
+            const lobby = onlineLobbies[currentLobby];
+            if (lobby) {
+                lobby.players = lobby.players.filter(p => p !== playerName);
+                if (lobby.host === playerName || lobby.players.length === 0) {
+                    delete onlineLobbies[currentLobby];
+                } else if (lobby.host === playerName && lobby.players.length > 0) {
+                    lobby.host = lobby.players[0];
+                }
+            }
+
+            currentLobby = null;
+            isInLobby = false;
+            isHost = false;
+            onlineMatchStarted = false;
+
+            closeLobbyUI();
+            showOnlineUI();
+            showMessage('🚪 Вы вышли из лобби');
+        }
+
+        // ---- ОБНОВЛЕНИЕ ЛОББИ UI ----
+        function updateLobbyUI() {
+            const lobby = onlineLobbies[currentLobby];
+            if (!lobby) {
+                closeLobbyUI();
+                return;
+            }
+
+            document.getElementById('lobby-title').textContent = '🏠 ' + lobby.name;
+            document.getElementById('lobby-info').textContent = '📊 Режим: ' + lobby.mode;
+
+            let playersHtml = '';
+            lobby.players.forEach(p => {
+                const isHostPlayer = p === lobby.host;
+                playersHtml += `
+                    <div class="lobby-player">
+                        <span>${p} ${isHostPlayer ? '👑' : ''}</span>
+                        <span class="${isHostPlayer ? 'host-badge' : 'ready-badge'}">
+                            ${isHostPlayer ? 'Хост' : '✅ Готов'}
+                        </span>
+                    </div>
+                `;
+            });
+
+            // Добавляем пустые слоты
+            const emptySlots = 2 - lobby.players.length;
+            for (let i = 0; i < emptySlots; i++) {
+                playersHtml += `
+                    <div class="lobby-player">
+                        <span style="color:rgba(255,255,255,0.2);">🔲 Свободно</span>
+                        <span class="waiting-badge">Ожидание...</span>
+                    </div>
+                `;
+            }
+
+            document.getElementById('lobby-players-list').innerHTML = playersHtml;
+
+            const statusText = document.getElementById('lobby-status-text');
+            const startBtn = document.getElementById('lobby-start-btn');
+
+            if (lobby.status === 'playing') {
+                statusText.textContent = '⚽ Матч идёт...';
+                startBtn.style.display = 'none';
+            } else if (lobby.players.length >= 2) {
+                statusText.textContent = '✅ Все игроки готовы!';
+                if (isHost) {
+                    startBtn.style.display = 'block';
+                    startBtn.textContent = '▶️ НАЧАТЬ МАТЧ';
+                } else {
+                    startBtn.style.display = 'none';
+                    statusText.textContent = '⏳ Ожидание начала матча хостом...';
+                }
+            } else {
+                statusText.textContent = '⏳ Ожидание игроков... (' + lobby.players.length + '/2)';
+                startBtn.style.display = 'none';
+            }
+        }
+
+        // ---- НАЧАЛО МАТЧА ----
+        function startOnlineMatch() {
+            if (!currentLobby || !isHost) {
+                showMessage('❌ Только хост может начать матч!');
+                return;
+            }
+
+            const lobby = onlineLobbies[currentLobby];
+            if (!lobby || lobby.players.length < 2) {
+                showMessage('❌ Нужно минимум 2 игрока!');
+                return;
+            }
+
+            if (lobby.status === 'playing') {
+                showMessage('❌ Матч уже идёт!');
+                return;
+            }
+
+            lobby.status = 'playing';
+            onlineMatchStarted = true;
+            isOnline = true;
+
+            // Определяем соперника
+            const opponent = lobby.players.find(p => p !== playerName);
+            opponentName = opponent || 'Соперник';
+
+            closeLobbyUI();
+            showMessage('⚽ Матч начинается! Противник: ' + opponentName);
+
+            // Запускаем игру
+            setTimeout(() => {
+                startGame('online');
+            }, 500);
+        }
+
+        // ============================================================
+        // ==================== ИГРОВОЙ ДВИЖОК ========================
+        // ============================================================
 
         // ---- ИНИЦИАЛИЗАЦИЯ ----
         window.onload = function() {
@@ -1333,6 +1813,13 @@
             setupActionButtons();
             setupKeyboard();
             gameLoop();
+
+            // Авто-обновление лобби каждые 2 секунды
+            setInterval(() => {
+                if (isInLobby && currentLobby) {
+                    updateLobbyUI();
+                }
+            }, 2000);
         };
 
         function resizeCanvas() {
@@ -1489,6 +1976,9 @@
                     if (document.getElementById('inventory-overlay').style.display === 'flex') closeInventoryUI();
                     if (document.getElementById('packs-overlay').style.display === 'flex') closePacksUI();
                     if (document.getElementById('online-overlay').style.display === 'flex') closeOnlineUI();
+                    if (document.getElementById('create-lobby-overlay').style.display === 'flex') closeCreateLobbyUI();
+                    if (document.getElementById('find-lobby-overlay').style.display === 'flex') closeFindLobbyUI();
+                    if (document.getElementById('lobby-overlay').style.display === 'flex') leaveLobby();
                 }
             });
             document.addEventListener('keyup', (e) => {
@@ -1500,7 +1990,12 @@
         }
 
         // ---- ЗАПУСК ИГРЫ ----
-        function startGame(type, onlineMode) {
+        function startOfflineGame() {
+            isOnline = false;
+            startGame('offline');
+        }
+
+        function startGame(type) {
             isOnline = type === 'online';
             gameState = 'playing';
 
@@ -1717,9 +2212,6 @@
                 } else {
                     if (!isOnline) {
                         updateBot(p, diff);
-                    } else {
-                        // В онлайн режиме боты не двигаются (их нет)
-                        // Оставляем для совместимости
                     }
                 }
                 if (p.passCooldown > 0) p.passCooldown--;
@@ -1776,7 +2268,7 @@
             if (goalCooldown > 0) goalCooldown--;
         }
 
-        // ---- БОТЫ (ТОЛЬКО ОФФЛАЙН) ----
+        // ---- БОТЫ (ОФФЛАЙН) ----
         function updateBot(p, diff) {
             const isHome = p.team === 'home';
             const role = p.role || 'midfielder';
@@ -1922,7 +2414,7 @@
                 }
             }
 
-            // Удар (сильнее)
+            // Удар
             if (r < 0.75) {
                 const goalX = isHome ? FIELD_W - 50 : 50;
                 const goalY = 350 + (Math.random() - 0.5) * 60;
@@ -2029,6 +2521,10 @@
                 document.getElementById('statusBar').style.display = 'none';
                 document.getElementById('online-status').style.display = 'none';
                 isOnline = false;
+                // Если был онлайн матч - обновляем лобби
+                if (currentLobby && onlineLobbies[currentLobby]) {
+                    onlineLobbies[currentLobby].status = 'finished';
+                }
                 updateUI();
             }, 2500);
         }
@@ -2037,13 +2533,16 @@
         function handleShoot() {
             const p = players.find(p => p.isPlayer);
             if (!p || !p.hasBall || matchFinished || isPassing || isShooting) return;
+
+            // Удар РОВНО ВПЕРЁД (по направлению игрока)
             const isHome = p.team === 'home';
             const goalX = isHome ? FIELD_W - 50 : 50;
             const goalY = 350 + (Math.random() - 0.5) * 60;
             const ang = Math.atan2(goalY - p.y, goalX - p.x);
             const power = 4 + Math.random() * 3;
-            ball.vx = power * Math.cos(ang + (Math.random() - 0.5) * 0.15);
-            ball.vy = power * Math.sin(ang + (Math.random() - 0.5) * 0.15);
+
+            ball.vx = power * Math.cos(ang + (Math.random() - 0.5) * 0.12);
+            ball.vy = power * Math.sin(ang + (Math.random() - 0.5) * 0.12);
             p.hasBall = false;
             isShooting = true;
             shootTimer = 0;
@@ -2365,13 +2864,13 @@
             document.getElementById('leaderboard').style.display = 'none';
         }
 
-        console.log('⚽ STREET FOOTBALL LEGENDS v5.0 загружена!');
+        console.log('⚽ STREET FOOTBALL LEGENDS v6.0 загружена!');
         console.log('👤 Игрок:', playerName || 'Гость');
         console.log('⭐ Рейтинг:', playerRating);
         console.log('💎 Кристаллы:', playerCrystals);
-        console.log('🌐 Онлайн режим добавлен!');
-        console.log('⚡ Скорость увеличена (PLAYER_SPEED=2.2)');
-        console.log('💥 Удар сильнее (power=4-7)');
+        console.log('🌐 Онлайн режим: создание и поиск лобби!');
+        console.log('⚡ Удар РОВНО ВПЕРЁД!');
+        console.log('🥅 Ворота увеличены до 180px!');
     </script>
 </body>
 </html>
