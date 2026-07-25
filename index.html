@@ -922,6 +922,22 @@
             margin-bottom: 10px;
         }
 
+        /* ОНЛАЙН МАТЧ (синхронизация) */
+        #online-sync-status {
+            position: absolute;
+            bottom: 150px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: rgba(255, 255, 255, 0.3);
+            font-size: 10px;
+            pointer-events: none;
+            z-index: 15;
+            display: none;
+            background: rgba(0, 0, 0, 0.4);
+            padding: 2px 10px;
+            border-radius: 6px;
+        }
+
         @media(max-width:600px) {
             #joystick-area {
                 width: 110px;
@@ -1022,6 +1038,7 @@
         <div id="statusBar">⚽ Добро пожаловать!</div>
         <div id="ratingDisplay">⭐ 50</div>
         <div id="online-status"></div>
+        <div id="online-sync-status">🔄 Синхронизация...</div>
 
         <!-- МЕНЮ -->
         <div id="menu-container">
@@ -1197,21 +1214,6 @@
         let equippedSkins = { 1: 'Повязка', 2: 'Майка', 3: 'Шорты', 4: 'Кеды', 5: 'Нарукавник' };
         let ownedSkins = {};
 
-        // Игровые объекты
-        let ball = { x: 600, y: 350, vx: 0, vy: 0 };
-        let players = [];
-        let goalkeepers = [];
-        let homeScore = 0,
-            awayScore = 0;
-        let gameTime = 0;
-        let matchFinished = false;
-        let goalCooldown = 0;
-        let isPassing = false;
-        let passTarget = null;
-        let passTimer = 0;
-        let isShooting = false;
-        let shootTimer = 0;
-
         // ---- ОНЛАЙН ----
         let currentLobby = null;
         let isInLobby = false;
@@ -1219,42 +1221,36 @@
         let onlineMatchStarted = false;
         let isOnline = false;
         let opponentName = '';
+        let lobbyPlayers = [];
+        let syncInterval = null;
+        let gameStarted = false;
 
-        // ============================================================
-// ==================== API ====================================
-// ============================================================
+        // ---- API ----
+        const SERVER_URL = 'https://machcup-mobile-server.onrender.com';
 
-const SERVER_URL = 'https://machcup-mobile-server.onrender.com';
+        async function apiCall(endpoint, data) {
+            try {
+                const res = await fetch(SERVER_URL + endpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                return await res.json();
+            } catch (e) {
+                console.log('API Error:', e);
+                return { error: 'Ошибка соединения с сервером' };
+            }
+        }
 
-async function apiCall(endpoint, data) {
-    try {
-        const res = await fetch(SERVER_URL + endpoint, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(data)
-        });
-        return await res.json();
-    } catch (e) {
-        console.log('API Error:', e);
-        return { error: 'Ошибка соединения с сервером' };
-    }
-}
-
-async function apiGet(endpoint) {
-    try {
-        const res = await fetch(SERVER_URL + endpoint);
-        return await res.json();
-    } catch (e) {
-        console.log('API Error:', e);
-        return { error: 'Ошибка соединения с сервером' };
-    }
-}
-
-        // Джостик
-        let joystickActive = false;
-        let joystickDX = 0,
-            joystickDY = 0;
-        let joystickTouchId = null;
+        async function apiGet(endpoint) {
+            try {
+                const res = await fetch(SERVER_URL + endpoint);
+                return await res.json();
+            } catch (e) {
+                console.log('API Error:', e);
+                return { error: 'Ошибка соединения с сервером' };
+            }
+        }
 
         // ---- СКИНЫ ----
         const SKIN_DATA = {
@@ -1299,7 +1295,6 @@ async function apiGet(endpoint) {
             mythic: '🔴 Мифический'
         };
 
-        // ---- ПАКИ ----
         const PACK_PRICES = { common: 100, rare: 300, epic: 800, legendary: 2000 };
         const PACK_DROPS = {
             common: { common: 60, uncommon: 30, rare: 10 },
@@ -1313,54 +1308,6 @@ async function apiGet(endpoint) {
             epic: '🟣 Эпический пак',
             legendary: '🟠 Легендарный пак'
         };
-
-        // ---- ФУНКЦИИ ----
-        function recalcRating() {
-            let rating = 50;
-            for (let slot = 1; slot <= 5; slot++) {
-                const skinName = equippedSkins[slot];
-                if (skinName && SKIN_DATA[skinName]) {
-                    rating += SKIN_DATA[skinName].rating;
-                }
-            }
-            playerRating = Math.min(rating, 99);
-            updateUI();
-            saveGame();
-        }
-
-        function loadSave() {
-            try {
-                const data = localStorage.getItem('football_save');
-                if (data) {
-                    const save = JSON.parse(data);
-                    playerName = save.name || '';
-                    playerRating = save.rating || 50;
-                    playerCrystals = save.crystals || 100;
-                    playerWins = save.wins || 0;
-                    playerMatches = save.matches || 0;
-                    playerGoals = save.goals || 0;
-                    equippedSkins = save.equippedSkins || { 1: 'Повязка', 2: 'Майка', 3: 'Шорты', 4: 'Кеды', 5: 'Нарукавник' };
-                    ownedSkins = save.ownedSkins || {};
-                    recalcRating();
-                }
-            } catch (e) { console.log('Ошибка загрузки', e); }
-        }
-
-        function saveGame() {
-            try {
-                const data = {
-                    name: playerName,
-                    rating: playerRating,
-                    crystals: playerCrystals,
-                    wins: playerWins,
-                    matches: playerMatches,
-                    goals: playerGoals,
-                    equippedSkins: equippedSkins,
-                    ownedSkins: ownedSkins
-                };
-                localStorage.setItem('football_save', JSON.stringify(data));
-            } catch (e) { console.log('Ошибка сохранения', e); }
-        }
 
         // ---- ПАКИ ----
         function openPack(packType) {
@@ -1431,6 +1378,54 @@ async function apiGet(endpoint) {
                 showMessage('❌ ' + name + ' снят');
                 renderInventoryUI();
             }
+        }
+
+        // ---- ФУНКЦИИ ----
+        function recalcRating() {
+            let rating = 50;
+            for (let slot = 1; slot <= 5; slot++) {
+                const skinName = equippedSkins[slot];
+                if (skinName && SKIN_DATA[skinName]) {
+                    rating += SKIN_DATA[skinName].rating;
+                }
+            }
+            playerRating = Math.min(rating, 99);
+            updateUI();
+            saveGame();
+        }
+
+        function loadSave() {
+            try {
+                const data = localStorage.getItem('football_save');
+                if (data) {
+                    const save = JSON.parse(data);
+                    playerName = save.name || '';
+                    playerRating = save.rating || 50;
+                    playerCrystals = save.crystals || 100;
+                    playerWins = save.wins || 0;
+                    playerMatches = save.matches || 0;
+                    playerGoals = save.goals || 0;
+                    equippedSkins = save.equippedSkins || { 1: 'Повязка', 2: 'Майка', 3: 'Шорты', 4: 'Кеды', 5: 'Нарукавник' };
+                    ownedSkins = save.ownedSkins || {};
+                    recalcRating();
+                }
+            } catch (e) { console.log('Ошибка загрузки', e); }
+        }
+
+        function saveGame() {
+            try {
+                const data = {
+                    name: playerName,
+                    rating: playerRating,
+                    crystals: playerCrystals,
+                    wins: playerWins,
+                    matches: playerMatches,
+                    goals: playerGoals,
+                    equippedSkins: equippedSkins,
+                    ownedSkins: ownedSkins
+                };
+                localStorage.setItem('football_save', JSON.stringify(data));
+            } catch (e) { console.log('Ошибка сохранения', e); }
         }
 
         // ---- UI ----
@@ -1632,11 +1627,15 @@ async function apiGet(endpoint) {
             currentLobby = result.lobby_id;
             isInLobby = true;
             isHost = true;
+            lobbyPlayers = [playerName];
 
             closeCreateLobbyUI();
             showLobbyUI();
-            showMessage('✅ Лобби "' + lobbyName + '" создано!');
+            showMessage('✅ Лобби "' + lobbyName + '" создано! Ожидайте игрока...');
             updateLobbyUI();
+
+            // Запускаем обновление лобби
+            startLobbySync();
         }
 
         // ---- ПОИСК ЛОББИ (API) ----
@@ -1691,16 +1690,38 @@ async function apiGet(endpoint) {
             currentLobby = lobbyId;
             isInLobby = true;
             isHost = false;
+            lobbyPlayers = result.lobby.players;
 
             closeFindLobbyUI();
             showLobbyUI();
-            showMessage('✅ Вы присоединились к лобби!');
+            showMessage('✅ Вы присоединились к лобби! Ожидайте начала матча...');
             updateLobbyUI();
+
+            // Запускаем обновление лобби
+            startLobbySync();
+        }
+
+        // ---- СИНХРОНИЗАЦИЯ ЛОББИ ----
+        function startLobbySync() {
+            if (syncInterval) clearInterval(syncInterval);
+            syncInterval = setInterval(async () => {
+                if (!currentLobby || !isInLobby) {
+                    clearInterval(syncInterval);
+                    syncInterval = null;
+                    return;
+                }
+                await updateLobbyUI();
+            }, 1500);
         }
 
         // ---- ВЫХОД ИЗ ЛОББИ (API) ----
         async function leaveLobby() {
             if (!currentLobby) return;
+
+            if (syncInterval) {
+                clearInterval(syncInterval);
+                syncInterval = null;
+            }
 
             const result = await apiCall('/api/lobby/leave', {
                 lobby_id: currentLobby,
@@ -1716,6 +1737,7 @@ async function apiGet(endpoint) {
             isInLobby = false;
             isHost = false;
             onlineMatchStarted = false;
+            lobbyPlayers = [];
 
             closeLobbyUI();
             showOnlineUI();
@@ -1733,8 +1755,14 @@ async function apiGet(endpoint) {
             if (!lobby) {
                 closeLobbyUI();
                 showMessage('❌ Лобби было удалено');
+                if (syncInterval) {
+                    clearInterval(syncInterval);
+                    syncInterval = null;
+                }
                 return;
             }
+
+            lobbyPlayers = lobby.players;
 
             document.getElementById('lobby-title').textContent = '🏠 ' + lobby.name;
             document.getElementById('lobby-info').textContent = '📊 Режим: ' + lobby.mode;
@@ -1742,9 +1770,10 @@ async function apiGet(endpoint) {
             let playersHtml = '';
             lobby.players.forEach(p => {
                 const isHostPlayer = p === lobby.host;
+                const isMe = p === playerName;
                 playersHtml += `
-                    <div class="lobby-player">
-                        <span>${p} ${isHostPlayer ? '👑' : ''}</span>
+                    <div class="lobby-player" style="${isMe ? 'border-left: 3px solid #ffd700;' : ''}">
+                        <span>${p} ${isHostPlayer ? '👑' : ''} ${isMe ? ' (Вы)' : ''}</span>
                         <span class="${isHostPlayer ? 'host-badge' : 'ready-badge'}">
                             ${isHostPlayer ? 'Хост' : '✅ Готов'}
                         </span>
@@ -1805,6 +1834,676 @@ async function apiGet(endpoint) {
             const opponent = lobby.players.find(p => p !== playerName);
             opponentName = opponent || 'Соперник';
 
+            if (syncInterval) {
+                clearInterval(syncInterval);
+                syncInterval = null;
+            }
+
+            closeLobbyUI();
+            showMessage('⚽ Матч начинается! Противник: ' + opponentName);
+
+            setTimeout(() => {
+                startGame('online');
+            }, 500);
+        }
+
+        // ============================================================
+        // ==================== ИГРОВОЙ ДВИЖОК ========================
+        // ============================================================
+
+        // ---- ИНИЦИАЛИЗАЦИЯ ----
+        let canvas, ctx;
+        let gameState = 'menu';
+        let mode = '2x2';
+        let difficulty = 'easy';
+        let playerName = '';
+        let playerRating = 50;
+        let playerCrystals = 100;
+        let playerWins = 0,
+            playerMatches = 0,
+            playerGoals = 0;
+        let lobbyMode = '1x1';
+
+        let equippedSkins = { 1: 'Повязка', 2: 'Майка', 3: 'Шорты', 4: 'Кеды', 5: 'Нарукавник' };
+        let ownedSkins = {};
+
+        // Игровые объекты
+        let ball = { x: 600, y: 350, vx: 0, vy: 0 };
+        let players = [];
+        let goalkeepers = [];
+        let homeScore = 0,
+            awayScore = 0;
+        let gameTime = 0;
+        let matchFinished = false;
+        let goalCooldown = 0;
+        let isPassing = false;
+        let passTarget = null;
+        let passTimer = 0;
+        let isShooting = false;
+        let shootTimer = 0;
+
+        // Джостик
+        let joystickActive = false;
+        let joystickDX = 0,
+            joystickDY = 0;
+        let joystickTouchId = null;
+        let keys = { up: false, down: false, left: false, right: false };
+
+        // ---- API ----
+        const SERVER_URL = 'https://machcup-mobile-server.onrender.com';
+
+        async function apiCall(endpoint, data) {
+            try {
+                const res = await fetch(SERVER_URL + endpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                return await res.json();
+            } catch (e) {
+                console.log('API Error:', e);
+                return { error: 'Ошибка соединения с сервером' };
+            }
+        }
+
+        async function apiGet(endpoint) {
+            try {
+                const res = await fetch(SERVER_URL + endpoint);
+                return await res.json();
+            } catch (e) {
+                console.log('API Error:', e);
+                return { error: 'Ошибка соединения с сервером' };
+            }
+        }
+
+        // ---- СКИНЫ ----
+        const SKIN_DATA = {
+            'Повязка': { slot: 1, rarity: 'common', rating: 0 },
+            'Бандана': { slot: 1, rarity: 'uncommon', rating: 1 },
+            'Шлем': { slot: 1, rarity: 'rare', rating: 2 },
+            'Корона': { slot: 1, rarity: 'epic', rating: 5 },
+            'Золотой шлем': { slot: 1, rarity: 'legendary', rating: 8 },
+            'Нимб бога': { slot: 1, rarity: 'mythic', rating: 10 },
+            'Майка': { slot: 2, rarity: 'common', rating: 0 },
+            'Футболка': { slot: 2, rarity: 'uncommon', rating: 1 },
+            'Броня': { slot: 2, rarity: 'rare', rating: 2 },
+            'Латы': { slot: 2, rarity: 'epic', rating: 5 },
+            'Золотая броня': { slot: 2, rarity: 'legendary', rating: 8 },
+            'Доспехи бога': { slot: 2, rarity: 'mythic', rating: 10 },
+            'Шорты': { slot: 3, rarity: 'common', rating: 0 },
+            'Наголенники': { slot: 3, rarity: 'uncommon', rating: 1 },
+            'Щитки': { slot: 3, rarity: 'rare', rating: 2 },
+            'Поножи': { slot: 3, rarity: 'epic', rating: 5 },
+            'Золотые поножи': { slot: 3, rarity: 'legendary', rating: 8 },
+            'Ноги бога': { slot: 3, rarity: 'mythic', rating: 10 },
+            'Кеды': { slot: 4, rarity: 'common', rating: 0 },
+            'Кроссовки': { slot: 4, rarity: 'uncommon', rating: 1 },
+            'Бутсы': { slot: 4, rarity: 'rare', rating: 2 },
+            'Молнии': { slot: 4, rarity: 'epic', rating: 5 },
+            'Золотые бутсы': { slot: 4, rarity: 'legendary', rating: 8 },
+            'Ботинки бога': { slot: 4, rarity: 'mythic', rating: 10 },
+            'Нарукавник': { slot: 5, rarity: 'common', rating: 0 },
+            'Перчатки': { slot: 5, rarity: 'uncommon', rating: 1 },
+            'Напульсник': { slot: 5, rarity: 'rare', rating: 2 },
+            'Амулет': { slot: 5, rarity: 'epic', rating: 4 },
+            'Золотой амулет': { slot: 5, rarity: 'legendary', rating: 7 },
+            'Артефакт бога': { slot: 5, rarity: 'mythic', rating: 9 }
+        };
+
+        const RARITY_NAMES = {
+            common: '🟤 Обычный',
+            uncommon: '🟢 Необычный',
+            rare: '🔵 Редкий',
+            epic: '🟣 Эпический',
+            legendary: '🟠 Легендарный',
+            mythic: '🔴 Мифический'
+        };
+
+        // ---- ПАКИ ----
+        const PACK_PRICES = { common: 100, rare: 300, epic: 800, legendary: 2000 };
+        const PACK_DROPS = {
+            common: { common: 60, uncommon: 30, rare: 10 },
+            rare: { uncommon: 40, rare: 35, epic: 25 },
+            epic: { rare: 30, epic: 45, legendary: 25 },
+            legendary: { epic: 30, legendary: 50, mythic: 20 }
+        };
+        const PACK_NAMES = {
+            common: '🟤 Обычный пак',
+            rare: '🔵 Редкий пак',
+            epic: '🟣 Эпический пак',
+            legendary: '🟠 Легендарный пак'
+        };
+
+        // ---- ПАКИ ----
+        function openPack(packType) {
+            if (playerCrystals < PACK_PRICES[packType]) {
+                showMessage('❌ Недостаточно кристаллов! Нужно ' + PACK_PRICES[packType] + '💎');
+                return;
+            }
+            playerCrystals -= PACK_PRICES[packType];
+
+            const drops = PACK_DROPS[packType];
+            let total = 0;
+            for (let k in drops) total += drops[k];
+            let r = Math.random() * total;
+            let rarity = 'common';
+            for (let k in drops) {
+                r -= drops[k];
+                if (r <= 0) { rarity = k; break; }
+            }
+
+            const skinsByRarity = {
+                common: ['Повязка', 'Майка', 'Шорты', 'Кеды', 'Нарукавник'],
+                uncommon: ['Бандана', 'Футболка', 'Наголенники', 'Кроссовки', 'Перчатки'],
+                rare: ['Шлем', 'Броня', 'Щитки', 'Бутсы', 'Напульсник'],
+                epic: ['Корона', 'Латы', 'Поножи', 'Молнии', 'Амулет'],
+                legendary: ['Золотой шлем', 'Золотая броня', 'Золотые поножи', 'Золотые бутсы', 'Золотой амулет'],
+                mythic: ['Нимб бога', 'Доспехи бога', 'Ноги бога', 'Ботинки бога', 'Артефакт бога']
+            };
+            const skinName = skinsByRarity[rarity][Math.floor(Math.random() * skinsByRarity[rarity].length)];
+
+            if (!ownedSkins[skinName]) ownedSkins[skinName] = 0;
+            ownedSkins[skinName]++;
+
+            saveGame();
+            recalcRating();
+
+            const ratingGain = SKIN_DATA[skinName] ? SKIN_DATA[skinName].rating : 0;
+            showMessage('🎉 Выпал: ' + RARITY_NAMES[rarity] + ' - ' + skinName + '! ⭐+' + ratingGain);
+            updateUI();
+            if (document.getElementById('packs-overlay').style.display === 'flex') {
+                renderPacksUI();
+            }
+        }
+
+        function equipSkinFromUI(skinName) {
+            if (!ownedSkins[skinName]) {
+                showMessage('❌ У вас нет этого скина!');
+                return;
+            }
+            const slot = SKIN_DATA[skinName].slot;
+            for (let s in equippedSkins) {
+                if (equippedSkins[s] === skinName) {
+                    delete equippedSkins[s];
+                }
+            }
+            equippedSkins[slot] = skinName;
+            saveGame();
+            recalcRating();
+            showMessage('✅ ' + skinName + ' надет! ⭐+' + SKIN_DATA[skinName].rating);
+            renderInventoryUI();
+        }
+
+        function removeSkinFromSlot(slot) {
+            if (equippedSkins[slot]) {
+                const name = equippedSkins[slot];
+                delete equippedSkins[slot];
+                saveGame();
+                recalcRating();
+                showMessage('❌ ' + name + ' снят');
+                renderInventoryUI();
+            }
+        }
+
+        // ---- ФУНКЦИИ ----
+        function recalcRating() {
+            let rating = 50;
+            for (let slot = 1; slot <= 5; slot++) {
+                const skinName = equippedSkins[slot];
+                if (skinName && SKIN_DATA[skinName]) {
+                    rating += SKIN_DATA[skinName].rating;
+                }
+            }
+            playerRating = Math.min(rating, 99);
+            updateUI();
+            saveGame();
+        }
+
+        function loadSave() {
+            try {
+                const data = localStorage.getItem('football_save');
+                if (data) {
+                    const save = JSON.parse(data);
+                    playerName = save.name || '';
+                    playerRating = save.rating || 50;
+                    playerCrystals = save.crystals || 100;
+                    playerWins = save.wins || 0;
+                    playerMatches = save.matches || 0;
+                    playerGoals = save.goals || 0;
+                    equippedSkins = save.equippedSkins || { 1: 'Повязка', 2: 'Майка', 3: 'Шорты', 4: 'Кеды', 5: 'Нарукавник' };
+                    ownedSkins = save.ownedSkins || {};
+                    recalcRating();
+                }
+            } catch (e) { console.log('Ошибка загрузки', e); }
+        }
+
+        function saveGame() {
+            try {
+                const data = {
+                    name: playerName,
+                    rating: playerRating,
+                    crystals: playerCrystals,
+                    wins: playerWins,
+                    matches: playerMatches,
+                    goals: playerGoals,
+                    equippedSkins: equippedSkins,
+                    ownedSkins: ownedSkins
+                };
+                localStorage.setItem('football_save', JSON.stringify(data));
+            } catch (e) { console.log('Ошибка сохранения', e); }
+        }
+
+        // ---- UI ----
+        function updateUI() {
+            const info = document.getElementById('playerInfo');
+            if (playerName) {
+                info.textContent = '👤 ' + playerName + ' | ⭐ ' + playerRating + ' | 💎 ' + playerCrystals;
+                document.getElementById('guestMenu').style.display = 'none';
+                document.getElementById('userMenu').style.display = 'block';
+            } else {
+                info.textContent = '👤 Гость | ⭐ 50 | 💎 100';
+                document.getElementById('guestMenu').style.display = 'block';
+                document.getElementById('userMenu').style.display = 'none';
+            }
+            document.getElementById('ratingDisplay').textContent = '⭐ ' + playerRating;
+        }
+
+        // ---- ПАКИ UI ----
+        function showPacksUI() {
+            document.getElementById('packs-overlay').style.display = 'flex';
+            renderPacksUI();
+        }
+
+        function closePacksUI() {
+            document.getElementById('packs-overlay').style.display = 'none';
+        }
+
+        function renderPacksUI() {
+            const list = document.getElementById('packs-list');
+            document.getElementById('packs-crystals').textContent = '💎 Кристаллов: ' + playerCrystals;
+
+            let html = '';
+            const packTypes = ['common', 'rare', 'epic', 'legendary'];
+            packTypes.forEach(type => {
+                const price = PACK_PRICES[type];
+                const name = PACK_NAMES[type];
+                const canBuy = playerCrystals >= price;
+                const rarityClass = 'rarity-' + type;
+                html += `
+                    <div class="pack-item ${rarityClass}">
+                        <div class="pack-info">
+                            <div class="pack-name">${name}</div>
+                            <div class="pack-desc">Шансы: ${Object.entries(PACK_DROPS[type]).map(([k,v]) => RARITY_NAMES[k]+' '+v+'%').join(', ')}</div>
+                        </div>
+                        <div class="pack-price">${price}💎</div>
+                        <button class="pack-btn" onclick="openPack('${type}')" ${canBuy ? '' : 'disabled'}>
+                            ${canBuy ? 'Открыть' : 'Нет 💎'}
+                        </button>
+                    </div>
+                `;
+            });
+            list.innerHTML = html;
+        }
+
+        // ---- ИНВЕНТАРЬ UI ----
+        function showInventoryUI() {
+            document.getElementById('inventory-overlay').style.display = 'flex';
+            renderInventoryUI();
+        }
+
+        function closeInventoryUI() {
+            document.getElementById('inventory-overlay').style.display = 'none';
+        }
+
+        function renderInventoryUI() {
+            const list = document.getElementById('inventory-list');
+            const stats = document.getElementById('inventory-stats');
+            stats.textContent = '💎 ' + playerCrystals + ' кристаллов | ⭐ ' + playerRating + '/99 рейтинга';
+
+            let html = '';
+
+            html += '<div class="inv-section-title">⭐ ЭКИПИРОВАНО</div>';
+            for (let slot = 1; slot <= 5; slot++) {
+                const name = equippedSkins[slot] || 'Пусто';
+                const data = SKIN_DATA[name];
+                const rating = data ? data.rating : 0;
+                const rarity = data ? data.rarity : 'common';
+                const rarityClass = 'rarity-' + rarity;
+                html += `
+                    <div class="skin-item ${rarityClass}">
+                        <div class="skin-info">
+                            <span class="skin-name">${RARITY_NAMES[rarity]} ${name}</span>
+                            <span class="skin-desc">Слот ${slot} | ⭐+${rating}</span>
+                        </div>
+                        <span class="equipped-badge">✅</span>
+                        ${name !== 'Пусто' ? `<button class="skin-btn" onclick="removeSkinFromSlot(${slot})">Снять</button>` : ''}
+                    </div>
+                `;
+            }
+
+            const ownedList = Object.keys(ownedSkins);
+            if (ownedList.length > 0) {
+                html += '<div class="inv-section-title">📦 В ИНВЕНТАРЕ</div>';
+                ownedList.forEach(name => {
+                    const data = SKIN_DATA[name];
+                    if (!data) return;
+                    const count = ownedSkins[name];
+                    const isEquipped = Object.values(equippedSkins).includes(name);
+                    const rarityClass = 'rarity-' + data.rarity;
+                    html += `
+                        <div class="skin-item ${rarityClass}">
+                            <div class="skin-info">
+                                <span class="skin-name">${RARITY_NAMES[data.rarity]} ${name} ${count > 1 ? '×'+count : ''}</span>
+                                <span class="skin-desc">Слот ${data.slot} | ⭐+${data.rating} ${isEquipped ? '| ✅ Экипирован' : ''}</span>
+                            </div>
+                            ${!isEquipped ? `<button class="skin-btn" onclick="equipSkinFromUI('${name}')">Надеть</button>` : ''}
+                        </div>
+                    `;
+                });
+            } else {
+                html += '<div class="skin-item" style="justify-content:center;color:rgba(255,255,255,0.2);padding:20px;">У вас пока нет скинов. Открывайте паки! 📦</div>';
+            }
+
+            list.innerHTML = html;
+        }
+
+        // ============================================================
+        // ==================== ОНЛАЙН СИСТЕМА ========================
+        // ============================================================
+
+        // ---- ОНЛАЙН UI ----
+        function showOnlineUI() {
+            if (!playerName) {
+                showMessage('❌ Сначала войдите в аккаунт!');
+                return;
+            }
+            document.getElementById('online-overlay').style.display = 'flex';
+            document.getElementById('online-status-text').textContent = '⚡ Выберите режим';
+        }
+
+        function closeOnlineUI() {
+            document.getElementById('online-overlay').style.display = 'none';
+        }
+
+        // ---- СОЗДАНИЕ ЛОББИ UI ----
+        function showCreateLobbyUI() {
+            closeOnlineUI();
+            document.getElementById('create-lobby-overlay').style.display = 'flex';
+            document.getElementById('lobbyNameInput').value = 'Лобби ' + playerName;
+            document.getElementById('create-lobby-msg').textContent = '';
+            document.querySelectorAll('#create-lobby-container .mode-select .btn').forEach(b => b.classList.remove('active'));
+            document.querySelector('#create-lobby-container .mode-select .btn:first-child').classList.add('active');
+            lobbyMode = '1x1';
+        }
+
+        function closeCreateLobbyUI() {
+            document.getElementById('create-lobby-overlay').style.display = 'none';
+            showOnlineUI();
+        }
+
+        function selectLobbyMode(mode, btn) {
+            document.querySelectorAll('#create-lobby-container .mode-select .btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            lobbyMode = mode;
+        }
+
+        // ---- ПОИСК ЛОББИ UI ----
+        function showFindLobbyUI() {
+            closeOnlineUI();
+            document.getElementById('find-lobby-overlay').style.display = 'flex';
+            findLobbies();
+        }
+
+        function closeFindLobbyUI() {
+            document.getElementById('find-lobby-overlay').style.display = 'none';
+            showOnlineUI();
+        }
+
+        // ---- ЛОББИ UI ----
+        function showLobbyUI() {
+            document.getElementById('lobby-overlay').style.display = 'flex';
+            updateLobbyUI();
+        }
+
+        function closeLobbyUI() {
+            document.getElementById('lobby-overlay').style.display = 'none';
+        }
+
+        // ---- СОЗДАНИЕ ЛОББИ (API) ----
+        async function createLobby() {
+            const lobbyName = document.getElementById('lobbyNameInput').value.trim() || 'Лобби ' + playerName;
+
+            if (!playerName) {
+                showMessage('❌ Сначала войдите в аккаунт!');
+                return;
+            }
+
+            const result = await apiCall('/api/lobby/create', {
+                name: lobbyName,
+                host: playerName,
+                mode: lobbyMode
+            });
+
+            if (result.error) {
+                showMessage('❌ ' + result.error);
+                return;
+            }
+
+            currentLobby = result.lobby_id;
+            isInLobby = true;
+            isHost = true;
+            lobbyPlayers = [playerName];
+
+            closeCreateLobbyUI();
+            showLobbyUI();
+            showMessage('✅ Лобби "' + lobbyName + '" создано! Ожидайте игрока...');
+            updateLobbyUI();
+
+            // Запускаем обновление лобби
+            startLobbySync();
+        }
+
+        // ---- ПОИСК ЛОББИ (API) ----
+        async function findLobbies() {
+            const list = document.getElementById('lobby-list');
+            if (!list) return;
+
+            const result = await apiGet('/api/lobby/list');
+
+            if (result.error) {
+                list.innerHTML = '<div style="text-align:center;color:rgba(255,255,255,0.3);padding:20px;">Ошибка загрузки</div>';
+                return;
+            }
+
+            if (result.length === 0) {
+                list.innerHTML = '<div style="text-align:center;color:rgba(255,255,255,0.3);padding:20px;">Нет доступных лобби</div>';
+                return;
+            }
+
+            let html = '';
+            result.forEach(lobby => {
+                const isFull = lobby.players.length >= 2;
+                html += `
+                    <div class="lobby-item">
+                        <div class="lobby-info-text">
+                            <div class="lobby-name">${lobby.name}</div>
+                            <div class="lobby-desc">👤 ${lobby.host} | ${lobby.mode} | ${lobby.players.length}/2 игроков</div>
+                        </div>
+                        ${!isFull && lobby.host !== playerName ? 
+                            `<button class="join-btn" onclick="joinLobby('${lobby.id}')">🔗 Присоединиться</button>` : 
+                            `<span style="color:rgba(255,255,255,0.2);font-size:12px;">${isFull ? '🟢 Полно' : '❌ Ваше лобби'}</span>`
+                        }
+                    </div>
+                `;
+            });
+
+            list.innerHTML = html;
+        }
+
+        // ---- ПРИСОЕДИНЕНИЕ К ЛОББИ (API) ----
+        async function joinLobby(lobbyId) {
+            const result = await apiCall('/api/lobby/join', {
+                lobby_id: lobbyId,
+                player: playerName
+            });
+
+            if (result.error) {
+                showMessage('❌ ' + result.error);
+                return;
+            }
+
+            currentLobby = lobbyId;
+            isInLobby = true;
+            isHost = false;
+            lobbyPlayers = result.lobby.players;
+
+            closeFindLobbyUI();
+            showLobbyUI();
+            showMessage('✅ Вы присоединились к лобби! Ожидайте начала матча...');
+            updateLobbyUI();
+
+            // Запускаем обновление лобби
+            startLobbySync();
+        }
+
+        // ---- СИНХРОНИЗАЦИЯ ЛОББИ ----
+        function startLobbySync() {
+            if (syncInterval) clearInterval(syncInterval);
+            syncInterval = setInterval(async () => {
+                if (!currentLobby || !isInLobby) {
+                    clearInterval(syncInterval);
+                    syncInterval = null;
+                    return;
+                }
+                await updateLobbyUI();
+            }, 1500);
+        }
+
+        // ---- ВЫХОД ИЗ ЛОББИ (API) ----
+        async function leaveLobby() {
+            if (!currentLobby) return;
+
+            if (syncInterval) {
+                clearInterval(syncInterval);
+                syncInterval = null;
+            }
+
+            const result = await apiCall('/api/lobby/leave', {
+                lobby_id: currentLobby,
+                player: playerName
+            });
+
+            if (result.error) {
+                showMessage('❌ ' + result.error);
+                return;
+            }
+
+            currentLobby = null;
+            isInLobby = false;
+            isHost = false;
+            onlineMatchStarted = false;
+            lobbyPlayers = [];
+
+            closeLobbyUI();
+            showOnlineUI();
+            showMessage('🚪 Вы вышли из лобби');
+        }
+
+        // ---- ОБНОВЛЕНИЕ ЛОББИ UI (API) ----
+        async function updateLobbyUI() {
+            if (!currentLobby) return;
+
+            const result = await apiGet('/api/lobby/list');
+            if (result.error) return;
+
+            const lobby = result.find(l => l.id === currentLobby);
+            if (!lobby) {
+                closeLobbyUI();
+                showMessage('❌ Лобби было удалено');
+                if (syncInterval) {
+                    clearInterval(syncInterval);
+                    syncInterval = null;
+                }
+                return;
+            }
+
+            lobbyPlayers = lobby.players;
+
+            document.getElementById('lobby-title').textContent = '🏠 ' + lobby.name;
+            document.getElementById('lobby-info').textContent = '📊 Режим: ' + lobby.mode;
+
+            let playersHtml = '';
+            lobby.players.forEach(p => {
+                const isHostPlayer = p === lobby.host;
+                const isMe = p === playerName;
+                playersHtml += `
+                    <div class="lobby-player" style="${isMe ? 'border-left: 3px solid #ffd700;' : ''}">
+                        <span>${p} ${isHostPlayer ? '👑' : ''} ${isMe ? ' (Вы)' : ''}</span>
+                        <span class="${isHostPlayer ? 'host-badge' : 'ready-badge'}">
+                            ${isHostPlayer ? 'Хост' : '✅ Готов'}
+                        </span>
+                    </div>
+                `;
+            });
+
+            const emptySlots = 2 - lobby.players.length;
+            for (let i = 0; i < emptySlots; i++) {
+                playersHtml += `
+                    <div class="lobby-player">
+                        <span style="color:rgba(255,255,255,0.2);">🔲 Свободно</span>
+                        <span class="waiting-badge">Ожидание...</span>
+                    </div>
+                `;
+            }
+
+            document.getElementById('lobby-players-list').innerHTML = playersHtml;
+
+            const statusText = document.getElementById('lobby-status-text');
+            const startBtn = document.getElementById('lobby-start-btn');
+
+            if (lobby.status === 'playing') {
+                statusText.textContent = '⚽ Матч идёт...';
+                startBtn.style.display = 'none';
+            } else if (lobby.players.length >= 2) {
+                statusText.textContent = '✅ Все игроки готовы!';
+                if (isHost) {
+                    startBtn.style.display = 'block';
+                    startBtn.textContent = '▶️ НАЧАТЬ МАТЧ';
+                } else {
+                    startBtn.style.display = 'none';
+                    statusText.textContent = '⏳ Ожидание начала матча хостом...';
+                }
+            } else {
+                statusText.textContent = '⏳ Ожидание игроков... (' + lobby.players.length + '/2)';
+                startBtn.style.display = 'none';
+            }
+        }
+
+        // ---- НАЧАЛО МАТЧА (API) ----
+        async function startOnlineMatch() {
+            if (!currentLobby || !isHost) {
+                showMessage('❌ Только хост может начать матч!');
+                return;
+            }
+
+            const result = await apiCall('/api/lobby/start', {
+                lobby_id: currentLobby
+            });
+
+            if (result.error) {
+                showMessage('❌ ' + result.error);
+                return;
+            }
+
+            const lobby = result.lobby;
+            const opponent = lobby.players.find(p => p !== playerName);
+            opponentName = opponent || 'Соперник';
+
+            if (syncInterval) {
+                clearInterval(syncInterval);
+                syncInterval = null;
+            }
+
             closeLobbyUI();
             showMessage('⚽ Матч начинается! Противник: ' + opponentName);
 
@@ -1830,13 +2529,6 @@ async function apiGet(endpoint) {
             setupActionButtons();
             setupKeyboard();
             gameLoop();
-
-            // Авто-обновление лобби каждые 2 секунды
-            setInterval(() => {
-                if (isInLobby && currentLobby) {
-                    updateLobbyUI();
-                }
-            }, 2000);
         };
 
         function resizeCanvas() {
@@ -1963,8 +2655,6 @@ async function apiGet(endpoint) {
         }
 
         // ---- КНОПКИ ДЕЙСТВИЙ ----
-        let keys = { up: false, down: false, left: false, right: false };
-
         function setupActionButtons() {
             document.getElementById('btn-shoot').addEventListener('touchstart', (e) => { e.preventDefault();
                 handleShoot(); });
@@ -2028,9 +2718,11 @@ async function apiGet(endpoint) {
                 document.getElementById('online-status').style.display = 'block';
                 document.getElementById('online-status').textContent = '🌐 Онлайн: ' + (opponentName || 'Соперник');
                 document.getElementById('statusBar').textContent = '⚽ Онлайн матч!';
+                document.getElementById('online-sync-status').style.display = 'block';
             } else {
                 document.getElementById('online-status').style.display = 'none';
                 document.getElementById('statusBar').textContent = '⚽ Игра идет...';
+                document.getElementById('online-sync-status').style.display = 'none';
             }
 
             homeScore = 0;
@@ -2054,25 +2746,53 @@ async function apiGet(endpoint) {
 
             let homeTeam, awayTeam;
             if (mode === '2x2') {
-                homeTeam = [
-                    { name: isOnline ? playerName : 'Азиз', x: 250, y: 290, color: '#00b4d8' },
-                    { name: isOnline ? 'Тимейт' : 'Хабиб', x: 250, y: 410, color: '#0077b6' }
-                ];
-                awayTeam = [
-                    { name: isOnline ? opponentName || 'Соперник' : 'Шамиль Рб', x: 950, y: 290, color: '#e63946' },
-                    { name: isOnline ? 'Игрок 4' : 'Шамиль Jr.', x: 950, y: 410, color: '#c1121f' }
-                ];
+                if (isOnline) {
+                    // 1x1 онлайн
+                    homeTeam = [
+                        { name: playerName, x: 250, y: 290, color: '#00b4d8' },
+                        { name: 'Тимейт', x: 250, y: 410, color: '#0077b6' }
+                    ];
+                    awayTeam = [
+                        { name: opponentName || 'Соперник', x: 950, y: 290, color: '#e63946' },
+                        { name: 'Игрок 4', x: 950, y: 410, color: '#c1121f' }
+                    ];
+                } else {
+                    // Оффлайн 2x2
+                    homeTeam = [
+                        { name: 'Азиз', x: 250, y: 290, color: '#00b4d8' },
+                        { name: 'Хабиб', x: 250, y: 410, color: '#0077b6' }
+                    ];
+                    awayTeam = [
+                        { name: 'Шамиль Рб', x: 950, y: 290, color: '#e63946' },
+                        { name: 'Шамиль Jr.', x: 950, y: 410, color: '#c1121f' }
+                    ];
+                }
             } else {
-                homeTeam = [
-                    { name: isOnline ? playerName : 'Азиз', x: 220, y: 250, color: '#00b4d8' },
-                    { name: isOnline ? 'Тимейт 1' : 'Хабиб', x: 220, y: 350, color: '#0077b6' },
-                    { name: isOnline ? 'Тимейт 2' : 'Абдул', x: 220, y: 450, color: '#2d6a4f' }
-                ];
-                awayTeam = [
-                    { name: isOnline ? opponentName || 'Соперник' : 'Шамиль Рб', x: 980, y: 250, color: '#e63946' },
-                    { name: isOnline ? 'Игрок 5' : 'Шамиль Jr.', x: 980, y: 350, color: '#c1121f' },
-                    { name: isOnline ? 'Игрок 6' : 'Салаудин', x: 980, y: 450, color: '#f77f00' }
-                ];
+                if (isOnline) {
+                    // 1x1 онлайн (3x3 режим = 1x1 с ботоводами)
+                    homeTeam = [
+                        { name: playerName, x: 220, y: 250, color: '#00b4d8' },
+                        { name: 'Тимейт 1', x: 220, y: 350, color: '#0077b6' },
+                        { name: 'Тимейт 2', x: 220, y: 450, color: '#2d6a4f' }
+                    ];
+                    awayTeam = [
+                        { name: opponentName || 'Соперник', x: 980, y: 250, color: '#e63946' },
+                        { name: 'Игрок 5', x: 980, y: 350, color: '#c1121f' },
+                        { name: 'Игрок 6', x: 980, y: 450, color: '#f77f00' }
+                    ];
+                } else {
+                    // Оффлайн 3x3
+                    homeTeam = [
+                        { name: 'Азиз', x: 220, y: 250, color: '#00b4d8' },
+                        { name: 'Хабиб', x: 220, y: 350, color: '#0077b6' },
+                        { name: 'Абдул', x: 220, y: 450, color: '#2d6a4f' }
+                    ];
+                    awayTeam = [
+                        { name: 'Шамиль Рб', x: 980, y: 250, color: '#e63946' },
+                        { name: 'Шамиль Jr.', x: 980, y: 350, color: '#c1121f' },
+                        { name: 'Салаудин', x: 980, y: 450, color: '#f77f00' }
+                    ];
+                }
             }
 
             let id = 0;
@@ -2153,7 +2873,7 @@ async function apiGet(endpoint) {
                 return;
             }
 
-            // Мяч
+            // ---- МЯЧ ----
             ball.x += ball.vx;
             ball.y += ball.vy;
             ball.vx *= 0.98;
@@ -2173,7 +2893,7 @@ async function apiGet(endpoint) {
 
             checkGoals();
 
-            // Таймер паса
+            // ---- ПАС ----
             if (isPassing) {
                 passTimer++;
                 if (passTarget && Math.hypot(ball.x - passTarget.x, ball.y - passTarget.y) < 30) {
@@ -2205,9 +2925,10 @@ async function apiGet(endpoint) {
             };
             const diff = diffSettings[difficulty] || diffSettings.medium;
 
-            // Обновление игроков
+            // ---- ИГРОКИ ----
             players.forEach((p) => {
                 if (p.isPlayer) {
+                    // Управление игроком
                     let dx = 0,
                         dy = 0;
                     if (keys.up) dy = -PLAYER_SPEED;
@@ -2227,6 +2948,7 @@ async function apiGet(endpoint) {
                         ball.vy = 0;
                     }
                 } else {
+                    // Боты (только в оффлайн)
                     if (!isOnline) {
                         updateBot(p, diff);
                     }
@@ -2234,7 +2956,7 @@ async function apiGet(endpoint) {
                 if (p.passCooldown > 0) p.passCooldown--;
             });
 
-            // Вратари
+            // ---- ВРАТАРИ ----
             goalkeepers.forEach(gk => {
                 const targetX = gk.team === 'home' ? 60 : 1140;
                 const targetY = 350 + (ball.y - 350) * 0.15;
@@ -2262,7 +2984,7 @@ async function apiGet(endpoint) {
                 }
             });
 
-            // Столкновения с мячом
+            // ---- СТОЛКНОВЕНИЯ С МЯЧОМ ----
             if (!isPassing && !isShooting) {
                 players.forEach(p => {
                     if (!p.hasBall && p.canGetBall) {
@@ -2537,6 +3259,7 @@ async function apiGet(endpoint) {
                 document.getElementById('timer-display').style.display = 'none';
                 document.getElementById('statusBar').style.display = 'none';
                 document.getElementById('online-status').style.display = 'none';
+                document.getElementById('online-sync-status').style.display = 'none';
                 isOnline = false;
                 updateUI();
             }, 2500);
@@ -2876,11 +3599,11 @@ async function apiGet(endpoint) {
             document.getElementById('leaderboard').style.display = 'none';
         }
 
-        console.log('⚽ STREET FOOTBALL LEGENDS v7.0 загружена!');
+        console.log('⚽ STREET FOOTBALL LEGENDS v8.0 загружена!');
         console.log('👤 Игрок:', playerName || 'Гость');
         console.log('⭐ Рейтинг:', playerRating);
         console.log('💎 Кристаллы:', playerCrystals);
-        console.log('🌐 Онлайн работает через API сервера!');
+        console.log('🌐 Онлайн синхронизация включена!');
         console.log('⚡ Удар РОВНО ВПЕРЁД!');
         console.log('🥅 Ворота увеличены до 180px!');
     </script>
