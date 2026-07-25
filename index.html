@@ -201,7 +201,6 @@
             display: none;
         }
 
-        /* КРУГЛЫЙ ДЖОСТИК */
         #joystick-area {
             position: absolute;
             bottom: 80px;
@@ -250,7 +249,6 @@
             pointer-events: none;
         }
 
-        /* КНОПКИ ДЕЙСТВИЙ */
         #action-buttons {
             position: absolute;
             bottom: 80px;
@@ -422,8 +420,8 @@
             color: #ff6b6b !important;
         }
 
-        /* ПАКИ И СКИНЫ */
-        #packs-overlay {
+        /* ИНВЕНТАРЬ */
+        #inventory-overlay {
             position: absolute;
             top: 0;
             left: 0;
@@ -433,6 +431,122 @@
             backdrop-filter: blur(8px);
             -webkit-backdrop-filter: blur(8px);
             z-index: 70;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        #inventory-container {
+            background: rgba(13, 27, 42, 0.95);
+            border-radius: 20px;
+            padding: 20px;
+            width: 100%;
+            max-width: 460px;
+            max-height: 90vh;
+            overflow-y: auto;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 0 60px rgba(0, 0, 0, 0.5);
+        }
+        #inventory-container h2 {
+            color: #ffd700;
+            text-align: center;
+            margin-bottom: 8px;
+            font-size: 22px;
+        }
+        #inventory-stats {
+            text-align: center;
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.5);
+            margin-bottom: 12px;
+        }
+        .inv-section-title {
+            font-size: 11px;
+            text-transform: uppercase;
+            color: rgba(255, 255, 255, 0.3);
+            margin: 10px 0 5px;
+            letter-spacing: 1px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            padding-bottom: 4px;
+        }
+        .skin-item {
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 8px;
+            padding: 8px 12px;
+            margin: 4px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 13px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .skin-item .skin-info {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+        }
+        .skin-item .skin-name {
+            font-weight: bold;
+        }
+        .skin-item .skin-desc {
+            font-size: 10px;
+            color: rgba(255, 255, 255, 0.4);
+        }
+        .skin-item .skin-rating {
+            color: #ffd700;
+            font-size: 12px;
+        }
+        .skin-item .skin-btn {
+            background: rgba(255, 215, 0, 0.15);
+            border: 1px solid rgba(255, 215, 0, 0.2);
+            border-radius: 6px;
+            padding: 4px 12px;
+            color: #ffd700;
+            font-size: 11px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .skin-item .skin-btn:active {
+            transform: scale(0.95);
+            background: rgba(255, 215, 0, 0.3);
+        }
+        .skin-item .equipped-badge {
+            color: #51cf66;
+            font-weight: bold;
+            font-size: 11px;
+        }
+        .rarity-common .skin-name {
+            color: #8a8a8a;
+        }
+        .rarity-uncommon .skin-name {
+            color: #51cf66;
+        }
+        .rarity-rare .skin-name {
+            color: #4d7aff;
+        }
+        .rarity-epic .skin-name {
+            color: #b197fc;
+        }
+        .rarity-legendary .skin-name {
+            color: #ffd700;
+        }
+        .rarity-mythic .skin-name {
+            color: #ff6b6b;
+        }
+        .close-inv {
+            margin-top: 12px;
+        }
+
+        /* ПАКИ */
+        #packs-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            z-index: 80;
             display: none;
             align-items: center;
             justify-content: center;
@@ -452,8 +566,14 @@
         #packs-container h2 {
             color: #ffd700;
             text-align: center;
-            margin-bottom: 15px;
+            margin-bottom: 8px;
             font-size: 22px;
+        }
+        #packs-crystals {
+            text-align: center;
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.5);
+            margin-bottom: 12px;
         }
         .pack-item {
             background: rgba(255, 255, 255, 0.05);
@@ -465,10 +585,6 @@
             align-items: center;
             border: 1px solid rgba(255, 255, 255, 0.05);
             transition: all 0.2s;
-            cursor: pointer;
-        }
-        .pack-item:active {
-            transform: scale(0.97);
         }
         .pack-item .pack-info {
             display: flex;
@@ -525,59 +641,8 @@
         .rarity-mythic {
             border-left: 4px solid #ff6b6b;
         }
-
-        .skin-slot {
-            background: rgba(255, 255, 255, 0.03);
-            border-radius: 8px;
-            padding: 6px 10px;
-            margin: 3px 0;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-size: 12px;
-            border: 1px solid rgba(255, 255, 255, 0.03);
-        }
-        .skin-slot .slot-label {
-            color: rgba(255, 255, 255, 0.3);
-            font-size: 10px;
-            min-width: 40px;
-        }
-        .skin-slot .skin-name {
-            flex: 1;
-            padding: 0 8px;
-        }
-        .skin-slot .skin-rating {
-            color: #ffd700;
-            font-size: 11px;
-        }
-        .skin-slot .equip-btn {
-            background: rgba(255, 215, 0, 0.15);
-            border: 1px solid rgba(255, 215, 0, 0.2);
-            border-radius: 6px;
-            padding: 2px 10px;
-            color: #ffd700;
-            font-size: 10px;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-        .skin-slot .equip-btn:active {
-            transform: scale(0.95);
-            background: rgba(255, 215, 0, 0.3);
-        }
-        .skin-slot .equipped-badge {
-            color: #51cf66;
-            font-weight: bold;
-            font-size: 10px;
-        }
-
         .close-packs {
             margin-top: 12px;
-        }
-        #packs-crystals {
-            text-align: center;
-            font-size: 14px;
-            color: rgba(255, 255, 255, 0.5);
-            margin-bottom: 12px;
         }
 
         @media(max-width:600px) {
@@ -620,15 +685,6 @@
                 font-size: 10px;
                 padding: 5px 6px;
                 min-width: 45px;
-            }
-            #packs-container {
-                padding: 14px;
-            }
-            .pack-item {
-                padding: 10px 12px;
-            }
-            .pack-item .pack-name {
-                font-size: 13px;
             }
         }
         @media(max-width:400px) {
@@ -711,7 +767,8 @@
             </div>
 
             <div id="userMenu" style="display:none;">
-                <button class="btn btn-gold btn-full" onclick="showPacksUI()">📦 ПАКИ И СКИНЫ</button>
+                <button class="btn btn-gold btn-full" onclick="showPacksUI()">📦 ПАКИ</button>
+                <button class="btn btn-purple btn-full" onclick="showInventoryUI()">🎒 ИНВЕНТАРЬ</button>
                 <button class="btn btn-blue btn-full" onclick="showOnlineMenu()">🌐 ОНЛАЙН</button>
             </div>
 
@@ -735,14 +792,23 @@
             <button class="btn btn-gray close-btn" onclick="closeLeaderboard()">↩️ Назад</button>
         </div>
 
-        <!-- ПАКИ И СКИНЫ -->
+        <!-- ПАКИ -->
         <div id="packs-overlay">
             <div id="packs-container">
-                <h2>📦 ПАКИ И СКИНЫ</h2>
+                <h2>📦 ПАКИ</h2>
                 <div id="packs-crystals"></div>
                 <div id="packs-list"></div>
-                <div id="skins-list" style="margin-top:12px;border-top:1px solid rgba(255,255,255,0.1);padding-top:12px;"></div>
                 <button class="btn btn-gray close-packs" onclick="closePacksUI()">↩️ Назад</button>
+            </div>
+        </div>
+
+        <!-- ИНВЕНТАРЬ -->
+        <div id="inventory-overlay">
+            <div id="inventory-container">
+                <h2>🎒 ИНВЕНТАРЬ</h2>
+                <div id="inventory-stats"></div>
+                <div id="inventory-list"></div>
+                <button class="btn btn-gray close-inv" onclick="closeInventoryUI()">↩️ Назад</button>
             </div>
         </div>
 
@@ -804,49 +870,20 @@
         let gameTime = 0;
         let matchFinished = false;
         let goalCooldown = 0;
+
+        // ---- СИСТЕМА ПАСА И УДАРА ----
         let isPassing = false;
         let passTarget = null;
+        let passTimer = 0;
+        let passStartPos = null;
+        let isShooting = false;
+        let shootTimer = 0;
 
         // Джостик
         let joystickActive = false;
         let joystickDX = 0,
             joystickDY = 0;
         let joystickTouchId = null;
-
-        // ---- ЗАГРУЗКА ----
-        function loadSave() {
-            try {
-                const data = localStorage.getItem('football_save');
-                if (data) {
-                    const save = JSON.parse(data);
-                    playerName = save.name || '';
-                    playerRating = save.rating || 50;
-                    playerCrystals = save.crystals || 100;
-                    playerWins = save.wins || 0;
-                    playerMatches = save.matches || 0;
-                    playerGoals = save.goals || 0;
-                    equippedSkins = save.equippedSkins || { 1: 'Повязка', 2: 'Майка', 3: 'Шорты', 4: 'Кеды', 5: 'Нарукавник' };
-                    ownedSkins = save.ownedSkins || {};
-                    recalcRating();
-                }
-            } catch (e) { console.log('Ошибка загрузки', e); }
-        }
-
-        function saveGame() {
-            try {
-                const data = {
-                    name: playerName,
-                    rating: playerRating,
-                    crystals: playerCrystals,
-                    wins: playerWins,
-                    matches: playerMatches,
-                    goals: playerGoals,
-                    equippedSkins: equippedSkins,
-                    ownedSkins: ownedSkins
-                };
-                localStorage.setItem('football_save', JSON.stringify(data));
-            } catch (e) { console.log('Ошибка сохранения', e); }
-        }
 
         // ---- СКИНЫ ----
         const SKIN_DATA = {
@@ -912,7 +949,6 @@
             epic: { rare: 30, epic: 45, legendary: 25 },
             legendary: { epic: 30, legendary: 50, mythic: 20 }
         };
-
         const PACK_NAMES = {
             common: '🟤 Обычный пак',
             rare: '🔵 Редкий пак',
@@ -961,36 +997,57 @@
             }
         }
 
-        function equipSkinFromUI(skinName) {
-            if (!ownedSkins[skinName]) {
-                showMessage('❌ У вас нет этого скина!');
-                return;
-            }
-            const slot = SKIN_DATA[skinName].slot;
-            for (let s in equippedSkins) {
-                if (equippedSkins[s] === skinName) {
-                    delete equippedSkins[s];
+        // ---- СОХРАНЕНИЕ ----
+        function loadSave() {
+            try {
+                const data = localStorage.getItem('football_save');
+                if (data) {
+                    const save = JSON.parse(data);
+                    playerName = save.name || '';
+                    playerRating = save.rating || 50;
+                    playerCrystals = save.crystals || 100;
+                    playerWins = save.wins || 0;
+                    playerMatches = save.matches || 0;
+                    playerGoals = save.goals || 0;
+                    equippedSkins = save.equippedSkins || { 1: 'Повязка', 2: 'Майка', 3: 'Шорты', 4: 'Кеды', 5: 'Нарукавник' };
+                    ownedSkins = save.ownedSkins || {};
+                    recalcRating();
                 }
-            }
-            equippedSkins[slot] = skinName;
-            saveGame();
-            recalcRating();
-            showMessage('✅ ' + skinName + ' надет! ⭐+' + SKIN_DATA[skinName].rating);
-            renderPacksUI();
+            } catch (e) { console.log('Ошибка загрузки', e); }
         }
 
-        function removeSkinFromSlot(slot) {
-            if (equippedSkins[slot]) {
-                const name = equippedSkins[slot];
-                delete equippedSkins[slot];
-                saveGame();
-                recalcRating();
-                showMessage('❌ ' + name + ' снят');
-                renderPacksUI();
-            }
+        function saveGame() {
+            try {
+                const data = {
+                    name: playerName,
+                    rating: playerRating,
+                    crystals: playerCrystals,
+                    wins: playerWins,
+                    matches: playerMatches,
+                    goals: playerGoals,
+                    equippedSkins: equippedSkins,
+                    ownedSkins: ownedSkins
+                };
+                localStorage.setItem('football_save', JSON.stringify(data));
+            } catch (e) { console.log('Ошибка сохранения', e); }
         }
 
-        // ---- UI ПАКОВ ----
+        // ---- UI ----
+        function updateUI() {
+            const info = document.getElementById('playerInfo');
+            if (playerName) {
+                info.textContent = '👤 ' + playerName + ' | ⭐ ' + playerRating + ' | 💎 ' + playerCrystals;
+                document.getElementById('guestMenu').style.display = 'none';
+                document.getElementById('userMenu').style.display = 'block';
+            } else {
+                info.textContent = '👤 Гость | ⭐ 50 | 💎 100';
+                document.getElementById('guestMenu').style.display = 'block';
+                document.getElementById('userMenu').style.display = 'none';
+            }
+            document.getElementById('ratingDisplay').textContent = '⭐ ' + playerRating;
+        }
+
+        // ---- ПАКИ UI ----
         function showPacksUI() {
             document.getElementById('packs-overlay').style.display = 'flex';
             renderPacksUI();
@@ -1001,12 +1058,10 @@
         }
 
         function renderPacksUI() {
-            const packsList = document.getElementById('packs-list');
-            const skinsList = document.getElementById('skins-list');
+            const list = document.getElementById('packs-list');
             document.getElementById('packs-crystals').textContent = '💎 Кристаллов: ' + playerCrystals;
 
             let html = '';
-
             const packTypes = ['common', 'rare', 'epic', 'legendary'];
             packTypes.forEach(type => {
                 const price = PACK_PRICES[type];
@@ -1026,54 +1081,100 @@
                     </div>
                 `;
             });
+            list.innerHTML = html;
+        }
 
-            packsList.innerHTML = html;
+        // ---- ИНВЕНТАРЬ UI ----
+        function showInventoryUI() {
+            document.getElementById('inventory-overlay').style.display = 'flex';
+            renderInventoryUI();
+        }
 
-            let skinsHtml = '<div style="font-size:13px;color:rgba(255,255,255,0.5);margin-bottom:8px;">👕 ТВОИ СКИНЫ</div>';
+        function closeInventoryUI() {
+            document.getElementById('inventory-overlay').style.display = 'none';
+        }
 
-            skinsHtml += '<div style="font-size:11px;color:#ffd700;margin:4px 0;">⭐ ЭКИПИРОВАНО:</div>';
+        function equipSkinFromUI(skinName) {
+            if (!ownedSkins[skinName]) {
+                showMessage('❌ У вас нет этого скина!');
+                return;
+            }
+            const slot = SKIN_DATA[skinName].slot;
+            for (let s in equippedSkins) {
+                if (equippedSkins[s] === skinName) {
+                    delete equippedSkins[s];
+                }
+            }
+            equippedSkins[slot] = skinName;
+            saveGame();
+            recalcRating();
+            showMessage('✅ ' + skinName + ' надет! ⭐+' + SKIN_DATA[skinName].rating);
+            renderInventoryUI();
+        }
+
+        function removeSkinFromSlot(slot) {
+            if (equippedSkins[slot]) {
+                const name = equippedSkins[slot];
+                delete equippedSkins[slot];
+                saveGame();
+                recalcRating();
+                showMessage('❌ ' + name + ' снят');
+                renderInventoryUI();
+            }
+        }
+
+        function renderInventoryUI() {
+            const list = document.getElementById('inventory-list');
+            const stats = document.getElementById('inventory-stats');
+            stats.textContent = '💎 ' + playerCrystals + ' кристаллов | ⭐ ' + playerRating + '/99 рейтинга';
+
+            let html = '';
+
+            // Экипированные
+            html += '<div class="inv-section-title">⭐ ЭКИПИРОВАНО</div>';
             for (let slot = 1; slot <= 5; slot++) {
                 const name = equippedSkins[slot] || 'Пусто';
                 const data = SKIN_DATA[name];
                 const rating = data ? data.rating : 0;
                 const rarity = data ? data.rarity : 'common';
-                skinsHtml += `
-                    <div class="skin-slot">
-                        <span class="slot-label">Слот ${slot}</span>
-                        <span class="skin-name" style="color:${rarity === 'legendary' ? '#ffd700' : rarity === 'mythic' ? '#ff6b6b' : 'white'}">
-                            ${RARITY_NAMES[rarity]} ${name}
-                        </span>
-                        <span class="skin-rating">⭐+${rating}</span>
-                        ${name !== 'Пусто' ? `<button class="equip-btn" onclick="removeSkinFromSlot(${slot})">Снять</button>` : ''}
+                const rarityClass = 'rarity-' + rarity;
+                html += `
+                    <div class="skin-item ${rarityClass}">
+                        <div class="skin-info">
+                            <span class="skin-name">${RARITY_NAMES[rarity]} ${name}</span>
+                            <span class="skin-desc">Слот ${slot} | ⭐+${rating}</span>
+                        </div>
+                        <span class="equipped-badge">✅</span>
+                        ${name !== 'Пусто' ? `<button class="skin-btn" onclick="removeSkinFromSlot(${slot})">Снять</button>` : ''}
                     </div>
                 `;
             }
 
+            // В инвентаре
             const ownedList = Object.keys(ownedSkins);
             if (ownedList.length > 0) {
-                skinsHtml += '<div style="font-size:11px;color:rgba(255,255,255,0.3);margin:6px 0 4px;">📦 В ИНВЕНТАРЕ:</div>';
+                html += '<div class="inv-section-title">📦 В ИНВЕНТАРЕ</div>';
                 ownedList.forEach(name => {
                     const data = SKIN_DATA[name];
                     if (!data) return;
                     const count = ownedSkins[name];
                     const isEquipped = Object.values(equippedSkins).includes(name);
-                    skinsHtml += `
-                        <div class="skin-slot" style="border-color:${isEquipped ? 'rgba(255,215,0,0.2)' : 'transparent'}">
-                            <span class="slot-label">Слот ${data.slot}</span>
-                            <span class="skin-name" style="color:${data.rarity === 'legendary' ? '#ffd700' : data.rarity === 'mythic' ? '#ff6b6b' : 'white'}">
-                                ${RARITY_NAMES[data.rarity]} ${name} ${count > 1 ? '×'+count : ''}
-                                ${isEquipped ? ' ✅' : ''}
-                            </span>
-                            <span class="skin-rating">⭐+${data.rating}</span>
-                            ${!isEquipped ? `<button class="equip-btn" onclick="equipSkinFromUI('${name}')">Надеть</button>` : ''}
+                    const rarityClass = 'rarity-' + data.rarity;
+                    html += `
+                        <div class="skin-item ${rarityClass}">
+                            <div class="skin-info">
+                                <span class="skin-name">${RARITY_NAMES[data.rarity]} ${name} ${count > 1 ? '×'+count : ''}</span>
+                                <span class="skin-desc">Слот ${data.slot} | ⭐+${data.rating} ${isEquipped ? '| ✅ Экипирован' : ''}</span>
+                            </div>
+                            ${!isEquipped ? `<button class="skin-btn" onclick="equipSkinFromUI('${name}')">Надеть</button>` : ''}
                         </div>
                     `;
                 });
             } else {
-                skinsHtml += '<div style="font-size:12px;color:rgba(255,255,255,0.2);padding:10px;">У вас пока нет скинов. Открывайте паки!</div>';
+                html += '<div class="skin-item" style="justify-content:center;color:rgba(255,255,255,0.2);padding:20px;">У вас пока нет скинов. Открывайте паки! 📦</div>';
             }
 
-            skinsList.innerHTML = skinsHtml;
+            list.innerHTML = html;
         }
 
         // ---- ИНИЦИАЛИЗАЦИЯ ----
@@ -1094,20 +1195,6 @@
         function resizeCanvas() {
             canvas.width = window.innerWidth;
             canvas.height = window.innerHeight;
-        }
-
-        function updateUI() {
-            const info = document.getElementById('playerInfo');
-            if (playerName) {
-                info.textContent = '👤 ' + playerName + ' | ⭐ ' + playerRating + ' | 💎 ' + playerCrystals;
-                document.getElementById('guestMenu').style.display = 'none';
-                document.getElementById('userMenu').style.display = 'block';
-            } else {
-                info.textContent = '👤 Гость | ⭐ 50 | 💎 100';
-                document.getElementById('guestMenu').style.display = 'block';
-                document.getElementById('userMenu').style.display = 'none';
-            }
-            document.getElementById('ratingDisplay').textContent = '⭐ ' + playerRating;
         }
 
         // ---- МЕНЮ ----
@@ -1229,6 +1316,8 @@
         }
 
         // ---- КНОПКИ ДЕЙСТВИЙ ----
+        let keys = { up: false, down: false, left: false, right: false };
+
         function setupActionButtons() {
             document.getElementById('btn-shoot').addEventListener('touchstart', (e) => { e.preventDefault();
                 handleShoot(); });
@@ -1240,9 +1329,6 @@
                 handleTackle(); });
             document.getElementById('btn-tackle').addEventListener('mousedown', handleTackle);
         }
-
-        // ---- КЛАВИАТУРА ----
-        let keys = { up: false, down: false, left: false, right: false };
 
         function setupKeyboard() {
             document.addEventListener('keydown', (e) => {
@@ -1256,8 +1342,9 @@
                     if (e.key === 'e') handlePass();
                     if (e.key === 'q') handleTackle();
                 }
-                if (e.key === 'Escape' && document.getElementById('packs-overlay').style.display === 'flex') {
-                    closePacksUI();
+                if (e.key === 'Escape') {
+                    if (document.getElementById('inventory-overlay').style.display === 'flex') closeInventoryUI();
+                    if (document.getElementById('packs-overlay').style.display === 'flex') closePacksUI();
                 }
             });
             document.addEventListener('keyup', (e) => {
@@ -1287,6 +1374,7 @@
             goalCooldown = 0;
             isPassing = false;
             passTarget = null;
+            isShooting = false;
             document.getElementById('score-display').textContent = '0 : 0';
 
             initMatch();
@@ -1336,7 +1424,8 @@
                     lastY: p.y,
                     stuckTimer: 0,
                     passCooldown: 0,
-                    role: 'field'
+                    role: 'field',
+                    canGetBall: true
                 });
             });
             awayTeam.forEach(p => {
@@ -1353,7 +1442,8 @@
                     lastY: p.y,
                     stuckTimer: 0,
                     passCooldown: 0,
-                    role: 'field'
+                    role: 'field',
+                    canGetBall: true
                 });
             });
 
@@ -1405,6 +1495,7 @@
             if (Math.abs(ball.vx) < 0.02) ball.vx = 0;
             if (Math.abs(ball.vy) < 0.02) ball.vy = 0;
 
+            // Границы поля
             const margin = 40;
             if (ball.x < margin + BALL_RADIUS) { ball.x = margin + BALL_RADIUS;
                 ball.vx = Math.abs(ball.vx) * 0.3; }
@@ -1415,8 +1506,38 @@
             if (ball.y > FIELD_H - margin - BALL_RADIUS) { ball.y = FIELD_H - margin - BALL_RADIUS;
                 ball.vy = -Math.abs(ball.vy) * 0.3; }
 
+            // Проверка голов
             checkGoals();
 
+            // Таймер паса
+            if (isPassing) {
+                passTimer++;
+                // Проверка достижения цели
+                if (passTarget && Math.hypot(ball.x - passTarget.x, ball.y - passTarget.y) < 30) {
+                    players.forEach(p2 => p2.hasBall = false);
+                    passTarget.hasBall = true;
+                    isPassing = false;
+                    passTarget = null;
+                    passTimer = 0;
+                }
+                // Если мяч улетел слишком далеко - сброс
+                if (passTimer > 120 || Math.abs(ball.vx) < 0.1 && Math.abs(ball.vy) < 0.1) {
+                    isPassing = false;
+                    passTarget = null;
+                    passTimer = 0;
+                }
+            }
+
+            // Таймер удара
+            if (isShooting) {
+                shootTimer++;
+                if (shootTimer > 30) {
+                    isShooting = false;
+                    shootTimer = 0;
+                }
+            }
+
+            // Сложность
             const diffSettings = {
                 easy: { speed: 0.4, accuracy: 0.3, aggression: 0.2, reaction: 30 },
                 medium: { speed: 0.6, accuracy: 0.6, aggression: 0.5, reaction: 20 },
@@ -1439,7 +1560,8 @@
                     p.y += dy;
                     p.x = Math.max(40, Math.min(FIELD_W - 40, p.x));
                     p.y = Math.max(40, Math.min(FIELD_H - 40, p.y));
-                    if (p.hasBall && !isPassing) {
+                    // Привязка мяча к игроку (если он владеет и не пас/удар)
+                    if (p.hasBall && !isPassing && !isShooting) {
                         ball.x = p.x + 22;
                         ball.y = p.y;
                         ball.vx = 0;
@@ -1461,6 +1583,7 @@
                 .x));
                 gk.y = Math.max(270, Math.min(430, gk.y));
 
+                // Ловля мяча
                 if (Math.hypot(gk.x - ball.x, gk.y - ball.y) < gk.radius + BALL_RADIUS + 5) {
                     const distToGoal = gk.team === 'home' ? ball.x : FIELD_W - ball.x;
                     if (distToGoal < 200 && Math.abs(ball.vx) < 4) {
@@ -1472,19 +1595,21 @@
                             ball.vx = (gk.team === 'home' ? 1 : -1) * (1.5 + Math.random() * 2);
                             ball.vy = (Math.random() - 0.5) * 2;
                             players.forEach(p => p.hasBall = false);
+                            isPassing = false;
+                            passTarget = null;
                         }
                     }
                 }
             });
 
-            // Столкновения с мячом - ТОЛЬКО ЕСЛИ НЕ ПАС
-            if (!isPassing) {
+            // Столкновения с мячом (только если не пас и не удар)
+            if (!isPassing && !isShooting) {
                 players.forEach(p => {
-                    if (!p.hasBall) {
+                    if (!p.hasBall && p.canGetBall) {
                         const dist = Math.hypot(p.x - ball.x, p.y - ball.y);
                         if (dist < p.radius + BALL_RADIUS + 2) {
                             const ang = Math.atan2(ball.y - p.y, ball.x - p.x);
-                            const power = 0.5 + Math.random() * 0.5;
+                            const power = 0.4 + Math.random() * 0.4;
                             ball.vx = power * Math.cos(ang);
                             ball.vy = power * Math.sin(ang);
                             players.forEach(p2 => p2.hasBall = false);
@@ -1495,19 +1620,6 @@
                         }
                     }
                 });
-            } else {
-                // Во время паса - проверяем достиг ли мяч цели
-                if (passTarget && Math.hypot(ball.x - passTarget.x, ball.y - passTarget.y) < 40) {
-                    players.forEach(p2 => p2.hasBall = false);
-                    passTarget.hasBall = true;
-                    isPassing = false;
-                    passTarget = null;
-                }
-                // Если мяч слишком долго летит - сброс
-                if (isPassing && Math.abs(ball.vx) < 0.1 && Math.abs(ball.vy) < 0.1) {
-                    isPassing = false;
-                    passTarget = null;
-                }
             }
 
             if (goalCooldown > 0) goalCooldown--;
@@ -1521,24 +1633,49 @@
             let targetX = 600,
                 targetY = 350;
 
+            // Бот с мячом
             if (p.hasBall) {
+                // Не двигается если пас активен
+                if (isPassing) return;
+
                 targetX = isHome ? FIELD_W - 120 : 120;
                 targetY = 350 + (Math.random() - 0.5) * 60;
 
+                // Проверка на пас
                 const nearbyEnemy = players.some(p2 =>
                     p2.team !== p.team && Math.hypot(p.x - p2.x, p.y - p2.y) < 70
                 );
-                if (nearbyEnemy && Math.random() < 0.35 * diff.accuracy && p.passCooldown === 0) {
+                if (nearbyEnemy && Math.random() < 0.35 * diff.accuracy && p.passCooldown === 0 && !isPassing) {
                     botAction(p, diff);
                     return;
                 }
 
+                // Удар
                 const distToGoal = isHome ? FIELD_W - p.x : p.x;
-                if (distToGoal < 200 && Math.random() < 0.2 * diff.accuracy) {
+                if (distToGoal < 200 && Math.random() < 0.2 * diff.accuracy && !isPassing) {
                     botAction(p, diff);
                     return;
                 }
+
+                // Движение с мячом
+                const dx = targetX - p.x;
+                const dy = targetY - p.y;
+                const dist = Math.hypot(dx, dy);
+                if (dist > 3) {
+                    const speed = BOT_SPEED_BASE * (0.4 + diff.speed * 0.6);
+                    const step = Math.min(speed, dist);
+                    p.x += (dx / dist) * step;
+                    p.y += (dy / dist) * step;
+                    // Мяч следует за ботом
+                    if (!isPassing && !isShooting) {
+                        ball.x = p.x + 22;
+                        ball.y = p.y;
+                        ball.vx = 0;
+                        ball.vy = 0;
+                    }
+                }
             } else {
+                // Без мяча - позиционирование
                 if (role === 'defender') {
                     targetX = isHome ? 180 + Math.random() * 60 : 1020 - Math.random() * 60;
                     targetY = 350 + (Math.random() - 0.5) * 100;
@@ -1550,15 +1687,18 @@
                     targetY = 350 + (Math.random() - 0.5) * 100;
                 }
 
+                // Если мяч рядом - перехват
                 const distToBall = Math.hypot(p.x - ball.x, p.y - ball.y);
-                if (distToBall < 140 && !players.some(p2 => p2.team === p.team && p2.hasBall)) {
+                if (distToBall < 140 && !players.some(p2 => p2.team === p.team && p2.hasBall) && !isPassing && !isShooting) {
                     targetX = ball.x + (isHome ? 15 : -15);
                     targetY = ball.y;
                 }
 
+                // Отбор у противника
                 players.forEach(p2 => {
-                    if (p2.team !== p.team && p2.hasBall && Math.hypot(p.x - p2.x, p.y - p2.y) < 40) {
-                        if (Math.random() < diff.aggression * 0.2) {
+                    if (p2.team !== p.team && p2.hasBall && Math.hypot(p.x - p2.x, p.y - p2.y) < 40 && !isPassing &&
+                        !isShooting) {
+                        if (Math.random() < diff.aggression * 0.25) {
                             const ang = Math.atan2(p2.y - p.y, p2.x - p.x);
                             ball.vx = 1.2 * Math.cos(ang + (Math.random() - 0.5) * 0.5);
                             ball.vy = 1.2 * Math.sin(ang + (Math.random() - 0.5) * 0.5);
@@ -1567,8 +1707,20 @@
                         }
                     }
                 });
+
+                // Движение
+                const dx = targetX - p.x;
+                const dy = targetY - p.y;
+                const dist = Math.hypot(dx, dy);
+                if (dist > 3) {
+                    const speed = BOT_SPEED_BASE * (0.4 + diff.speed * 0.6) * 0.8;
+                    const step = Math.min(speed, dist);
+                    p.x += (dx / dist) * step;
+                    p.y += (dy / dist) * step;
+                }
             }
 
+            // Анти-застревание
             if (Math.abs(p.x - p.lastX) < 0.3 && Math.abs(p.y - p.lastY) < 0.3) {
                 p.stuckTimer++;
                 if (p.stuckTimer > 50) {
@@ -1582,26 +1734,17 @@
             p.lastX = p.x;
             p.lastY = p.y;
 
-            const dx = targetX - p.x;
-            const dy = targetY - p.y;
-            const dist = Math.hypot(dx, dy);
-            if (dist > 3) {
-                const speed = BOT_SPEED_BASE * (0.5 + diff.speed * 0.5) * (0.9 + Math.random() * 0.2);
-                const step = Math.min(speed, dist);
-                p.x += (dx / dist) * step;
-                p.y += (dy / dist) * step;
-            }
-
             p.x = Math.max(45, Math.min(FIELD_W - 45, p.x));
             p.y = Math.max(45, Math.min(FIELD_H - 45, p.y));
         }
 
         function botAction(p, diff) {
-            if (!p.hasBall || matchFinished || p.passCooldown > 0 || isPassing) return;
+            if (!p.hasBall || matchFinished || p.passCooldown > 0 || isPassing || isShooting) return;
 
             const isHome = p.team === 'home';
             const r = Math.random();
 
+            // Пас - 45%
             if (r < 0.45) {
                 const teammates = players.filter(p2 => p2.team === p.team && p2.id !== p.id);
                 if (teammates.length > 0) {
@@ -1615,39 +1758,47 @@
                             best = tm; }
                     });
                     if (best && Math.hypot(best.x - p.x, best.y - p.y) < 400) {
+                        // ПАС - плавный, разной силы
                         isPassing = true;
                         passTarget = best;
+                        passTimer = 0;
+                        const dist = Math.hypot(best.x - p.x, best.y - p.y);
+                        const power = Math.min(6, Math.max(1.5, dist / 40));
                         const ang = Math.atan2(best.y - p.y, best.x - p.x);
-                        const power = 1.5 + Math.random() * 2;
-                        ball.vx = power * Math.cos(ang + (Math.random() - 0.5) * 0.08);
-                        ball.vy = power * Math.sin(ang + (Math.random() - 0.5) * 0.08);
+                        ball.vx = power * Math.cos(ang + (Math.random() - 0.5) * 0.06);
+                        ball.vy = power * Math.sin(ang + (Math.random() - 0.5) * 0.06);
                         p.hasBall = false;
-                        p.passCooldown = 20;
-                        // Автоматический прием через время
+                        p.passCooldown = 15;
+                        // Автоприем через время
                         setTimeout(() => {
                             if (isPassing && passTarget) {
                                 players.forEach(p2 => p2.hasBall = false);
                                 passTarget.hasBall = true;
                                 isPassing = false;
                                 passTarget = null;
+                                passTimer = 0;
                             }
-                        }, 600);
+                        }, 700);
                         return;
                     }
                 }
             }
 
-            if (r < 0.7) {
+            // Удар - 30%
+            if (r < 0.75) {
                 const goalX = isHome ? FIELD_W - 50 : 50;
                 const goalY = 350 + (Math.random() - 0.5) * 60;
                 const ang = Math.atan2(goalY - p.y, goalX - p.x);
-                const power = 2 + Math.random() * 3;
+                const power = 2.5 + Math.random() * 3;
                 ball.vx = power * Math.cos(ang + (Math.random() - 0.5) * 0.12);
                 ball.vy = power * Math.sin(ang + (Math.random() - 0.5) * 0.12);
                 p.hasBall = false;
+                isShooting = true;
+                shootTimer = 0;
                 return;
             }
 
+            // Дриблинг - 25%
             const goalX = isHome ? FIELD_W - 120 : 120;
             const goalY = 350 + (Math.random() - 0.5) * 40;
             const ang = Math.atan2(goalY - p.y, goalX - p.x);
@@ -1655,7 +1806,7 @@
             ball.vy = 1.2 * Math.sin(ang);
             p.hasBall = false;
             setTimeout(() => {
-                if (!isPassing) {
+                if (!isPassing && !isShooting) {
                     players.forEach(p2 => p2.hasBall = false);
                     p.hasBall = true;
                 }
@@ -1699,6 +1850,9 @@
             players[0].hasBall = true;
             isPassing = false;
             passTarget = null;
+            isShooting = false;
+            passTimer = 0;
+            shootTimer = 0;
         }
 
         // ---- ЗАВЕРШЕНИЕ МАТЧА ----
@@ -1742,7 +1896,7 @@
         // ---- ДЕЙСТВИЯ ИГРОКА ----
         function handleShoot() {
             const p = players.find(p => p.isPlayer);
-            if (!p || !p.hasBall || matchFinished || isPassing) return;
+            if (!p || !p.hasBall || matchFinished || isPassing || isShooting) return;
             const isHome = p.team === 'home';
             const goalX = isHome ? FIELD_W - 50 : 50;
             const goalY = 350 + (Math.random() - 0.5) * 60;
@@ -1751,11 +1905,13 @@
             ball.vx = power * Math.cos(ang + (Math.random() - 0.5) * 0.15);
             ball.vy = power * Math.sin(ang + (Math.random() - 0.5) * 0.15);
             p.hasBall = false;
+            isShooting = true;
+            shootTimer = 0;
         }
 
         function handlePass() {
             const p = players.find(p => p.isPlayer);
-            if (!p || !p.hasBall || matchFinished || isPassing) return;
+            if (!p || !p.hasBall || matchFinished || isPassing || isShooting) return;
             const teammates = players.filter(p2 => p2.team === p.team && p2.id !== p.id);
             if (teammates.length > 0) {
                 let best = null;
@@ -1767,28 +1923,33 @@
                         best = tm; }
                 });
                 if (best && Math.hypot(best.x - p.x, best.y - p.y) < 400) {
+                    // ПАС - плавный, разной силы
                     isPassing = true;
                     passTarget = best;
+                    passTimer = 0;
+                    const dist = Math.hypot(best.x - p.x, best.y - p.y);
+                    const power = Math.min(6, Math.max(1.5, dist / 40));
                     const ang = Math.atan2(best.y - p.y, best.x - p.x);
-                    const power = 1.5 + Math.random() * 2;
-                    ball.vx = power * Math.cos(ang + (Math.random() - 0.5) * 0.08);
-                    ball.vy = power * Math.sin(ang + (Math.random() - 0.5) * 0.08);
+                    ball.vx = power * Math.cos(ang + (Math.random() - 0.5) * 0.06);
+                    ball.vy = power * Math.sin(ang + (Math.random() - 0.5) * 0.06);
                     p.hasBall = false;
+                    // Автоприем через время
                     setTimeout(() => {
                         if (isPassing && passTarget) {
                             players.forEach(p2 => p2.hasBall = false);
                             passTarget.hasBall = true;
                             isPassing = false;
                             passTarget = null;
+                            passTimer = 0;
                         }
-                    }, 500);
+                    }, 600);
                 }
             }
         }
 
         function handleTackle() {
             const p = players.find(p => p.isPlayer);
-            if (!p || matchFinished || isPassing) return;
+            if (!p || matchFinished || isPassing || isShooting) return;
             players.forEach(p2 => {
                 if (p2.team !== p.team && p2.hasBall && Math.hypot(p.x - p2.x, p.y - p2.y) < 40) {
                     const ang = Math.atan2(p2.y - p.y, p2.x - p.x);
@@ -2070,7 +2231,7 @@
             document.getElementById('leaderboard').style.display = 'none';
         }
 
-        // ---- ОНЛАЙН (заглушка с сообщением) ----
+        // ---- ОНЛАЙН (заглушка) ----
         function showOnlineMenu() {
             showMessage('🌐 ОНЛАЙН РЕЖИМ\n\n' +
                 'В разработке!\n' +
@@ -2081,13 +2242,14 @@
                 'Следите за обновлениями! 🚀');
         }
 
-        console.log('⚽ STREET FOOTBALL LEGENDS v3.0 загружена!');
+        console.log('⚽ STREET FOOTBALL LEGENDS v4.0 загружена!');
         console.log('👤 Игрок:', playerName || 'Гость');
         console.log('⭐ Рейтинг:', playerRating);
         console.log('💎 Кристаллы:', playerCrystals);
-        console.log('🎮 Управление: Джостик + кнопки (или WASD/Стрелки)');
-        console.log('📦 Паки: Открываются из меню "ПАКИ И СКИНЫ"');
-        console.log('🏆 Ворота увеличены до 180px!');
+        console.log('🎮 Управление: Джостик + кнопки');
+        console.log('📦 Паки: Открываются из меню "ПАКИ"');
+        console.log('🎒 Инвентарь: Открывается из меню "ИНВЕНТАРЬ"');
+        console.log('⚡ Пас: плавный, разной силы!');
     </script>
 </body>
 </html>
