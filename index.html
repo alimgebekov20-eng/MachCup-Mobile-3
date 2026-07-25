@@ -422,7 +422,7 @@
             color: #ff6b6b !important;
         }
 
-        /* ПАКИ - КРАСИВО */
+        /* ПАКИ И СКИНЫ */
         #packs-overlay {
             position: absolute;
             top: 0;
@@ -550,9 +550,34 @@
             color: #ffd700;
             font-size: 11px;
         }
+        .skin-slot .equip-btn {
+            background: rgba(255, 215, 0, 0.15);
+            border: 1px solid rgba(255, 215, 0, 0.2);
+            border-radius: 6px;
+            padding: 2px 10px;
+            color: #ffd700;
+            font-size: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .skin-slot .equip-btn:active {
+            transform: scale(0.95);
+            background: rgba(255, 215, 0, 0.3);
+        }
+        .skin-slot .equipped-badge {
+            color: #51cf66;
+            font-weight: bold;
+            font-size: 10px;
+        }
 
         .close-packs {
             margin-top: 12px;
+        }
+        #packs-crystals {
+            text-align: center;
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.5);
+            margin-bottom: 12px;
         }
 
         @media(max-width:600px) {
@@ -714,8 +739,9 @@
         <div id="packs-overlay">
             <div id="packs-container">
                 <h2>📦 ПАКИ И СКИНЫ</h2>
+                <div id="packs-crystals"></div>
                 <div id="packs-list"></div>
-                <div id="skins-list"></div>
+                <div id="skins-list" style="margin-top:12px;border-top:1px solid rgba(255,255,255,0.1);padding-top:12px;"></div>
                 <button class="btn btn-gray close-packs" onclick="closePacksUI()">↩️ Назад</button>
             </div>
         </div>
@@ -751,8 +777,8 @@
         const GOAL_WIDTH = 20,
             GOAL_HEIGHT = 120;
         const MATCH_TIME = 300;
-        const PLAYER_SPEED = 2.8;
-        const BOT_SPEED_BASE = 2.4;
+        const PLAYER_SPEED = 1.8;
+        const BOT_SPEED_BASE = 1.6;
 
         // ---- ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ----
         let canvas, ctx;
@@ -778,6 +804,7 @@
         let gameTime = 0;
         let matchFinished = false;
         let goalCooldown = 0;
+        let isPassing = false;
 
         // Джостик
         let joystickActive = false;
@@ -939,11 +966,28 @@
                 return;
             }
             const slot = SKIN_DATA[skinName].slot;
+            // Снимаем старый скин с этого слота
+            for (let s in equippedSkins) {
+                if (equippedSkins[s] === skinName) {
+                    delete equippedSkins[s];
+                }
+            }
             equippedSkins[slot] = skinName;
             saveGame();
             recalcRating();
             showMessage('✅ ' + skinName + ' надет! ⭐+' + SKIN_DATA[skinName].rating);
             renderPacksUI();
+        }
+
+        function removeSkinFromSlot(slot) {
+            if (equippedSkins[slot]) {
+                const name = equippedSkins[slot];
+                delete equippedSkins[slot];
+                saveGame();
+                recalcRating();
+                showMessage('❌ ' + name + ' снят');
+                renderPacksUI();
+            }
         }
 
         // ---- UI ПАКОВ ----
@@ -959,9 +1003,9 @@
         function renderPacksUI() {
             const packsList = document.getElementById('packs-list');
             const skinsList = document.getElementById('skins-list');
+            document.getElementById('packs-crystals').textContent = '💎 Кристаллов: ' + playerCrystals;
 
-            let html = '<div style="margin-bottom:12px;font-size:14px;color:rgba(255,255,255,0.5);">💎 Кристаллов: ' +
-                playerCrystals + '</div>';
+            let html = '';
 
             // Паки
             const packTypes = ['common', 'rare', 'epic', 'legendary'];
@@ -984,9 +1028,10 @@
                 `;
             });
 
+            packsList.innerHTML = html;
+
             // Скины
-            let skinsHtml = '<div style="margin-top:12px;border-top:1px solid rgba(255,255,255,0.1);padding-top:12px;">';
-            skinsHtml += '<div style="font-size:13px;color:rgba(255,255,255,0.5);margin-bottom:8px;">👕 ТВОИ СКИНЫ</div>';
+            let skinsHtml = '<div style="font-size:13px;color:rgba(255,255,255,0.5);margin-bottom:8px;">👕 ТВОИ СКИНЫ</div>';
 
             // Экипированные
             skinsHtml += '<div style="font-size:11px;color:#ffd700;margin:4px 0;">⭐ ЭКИПИРОВАНО:</div>';
@@ -1002,6 +1047,7 @@
                             ${RARITY_NAMES[rarity]} ${name}
                         </span>
                         <span class="skin-rating">⭐+${rating}</span>
+                        ${name !== 'Пусто' ? `<button class="equip-btn" onclick="removeSkinFromSlot(${slot})">Снять</button>` : ''}
                     </div>
                 `;
             }
@@ -1023,7 +1069,7 @@
                                 ${isEquipped ? ' ✅' : ''}
                             </span>
                             <span class="skin-rating">⭐+${data.rating}</span>
-                            ${!isEquipped ? `<button class="pack-btn" style="font-size:10px;padding:2px 8px;" onclick="equipSkinFromUI('${name}')">Надеть</button>` : ''}
+                            ${!isEquipped ? `<button class="equip-btn" onclick="equipSkinFromUI('${name}')">Надеть</button>` : ''}
                         </div>
                     `;
                 });
@@ -1031,9 +1077,6 @@
                 skinsHtml += '<div style="font-size:12px;color:rgba(255,255,255,0.2);padding:10px;">У вас пока нет скинов. Открывайте паки!</div>';
             }
 
-            skinsHtml += '</div>';
-
-            packsList.innerHTML = html;
             skinsList.innerHTML = skinsHtml;
         }
 
@@ -1129,7 +1172,6 @@
                 joystickDY = 0;
                 joystickActive = false;
                 joystickTouchId = null;
-                // Сброс клавиш
                 keys.up = false;
                 keys.down = false;
                 keys.left = false;
@@ -1148,7 +1190,6 @@
                 for (let touch of e.changedTouches) {
                     if (touch.identifier === joystickTouchId) {
                         handleMove(touch.clientX, touch.clientY);
-                        // Преобразуем в клавиши
                         const deadZone = 0.15;
                         keys.up = joystickDY < -deadZone;
                         keys.down = joystickDY > deadZone;
@@ -1168,7 +1209,6 @@
 
             area.addEventListener('touchcancel', handleEnd, { passive: false });
 
-            // Мышь для ПК
             let mouseDown = false;
             area.addEventListener('mousedown', (e) => {
                 mouseDown = true;
@@ -1249,6 +1289,7 @@
             gameTime = 0;
             matchFinished = false;
             goalCooldown = 0;
+            isPassing = false;
             document.getElementById('score-display').textContent = '0 : 0';
 
             initMatch();
@@ -1319,7 +1360,6 @@
                 });
             });
 
-            // Вратари
             goalkeepers = [
                 { x: 55, y: 350, radius: 26, team: 'home' },
                 { x: 1145, y: 350, radius: 26, team: 'away' }
@@ -1358,27 +1398,26 @@
                 return;
             }
 
-            // Мяч
+            // Мяч - замедленное трение
             ball.x += ball.vx;
             ball.y += ball.vy;
-            ball.vx *= 0.98;
-            ball.vy *= 0.98;
-            if (Math.abs(ball.vx) < 0.05) ball.vx = 0;
-            if (Math.abs(ball.vy) < 0.05) ball.vy = 0;
+            ball.vx *= 0.97;
+            ball.vy *= 0.97;
+            if (Math.abs(ball.vx) < 0.03) ball.vx = 0;
+            if (Math.abs(ball.vy) < 0.03) ball.vy = 0;
 
             const margin = 40;
             if (ball.x < margin + BALL_RADIUS) { ball.x = margin + BALL_RADIUS;
-                ball.vx *= -0.4; }
+                ball.vx *= -0.3; }
             if (ball.x > FIELD_W - margin - BALL_RADIUS) { ball.x = FIELD_W - margin - BALL_RADIUS;
-                ball.vx *= -0.4; }
+                ball.vx *= -0.3; }
             if (ball.y < margin + BALL_RADIUS) { ball.y = margin + BALL_RADIUS;
-                ball.vy *= -0.4; }
+                ball.vy *= -0.3; }
             if (ball.y > FIELD_H - margin - BALL_RADIUS) { ball.y = FIELD_H - margin - BALL_RADIUS;
-                ball.vy *= -0.4; }
+                ball.vy *= -0.3; }
 
             checkGoals();
 
-            // Сложность
             const diffSettings = {
                 easy: { speed: 0.5, accuracy: 0.3, aggression: 0.2, reaction: 30 },
                 medium: { speed: 0.7, accuracy: 0.6, aggression: 0.5, reaction: 20 },
@@ -1389,7 +1428,6 @@
             // Обновление игроков
             players.forEach((p) => {
                 if (p.isPlayer) {
-                    // Управление от джостика
                     let dx = 0,
                         dy = 0;
                     if (keys.up) dy = -PLAYER_SPEED;
@@ -1402,7 +1440,7 @@
                     p.y += dy;
                     p.x = Math.max(40, Math.min(FIELD_W - 40, p.x));
                     p.y = Math.max(40, Math.min(FIELD_H - 40, p.y));
-                    if (p.hasBall) {
+                    if (p.hasBall && !isPassing) {
                         ball.x = p.x + 25;
                         ball.y = p.y;
                         ball.vx = 0;
@@ -1417,50 +1455,48 @@
             // Вратари
             goalkeepers.forEach(gk => {
                 const targetX = gk.team === 'home' ? 60 : 1140;
-                const targetY = 350 + (ball.y - 350) * 0.2;
-                gk.x += (targetX - gk.x) * 0.06;
-                gk.y += (targetY - gk.y) * 0.06;
+                const targetY = 350 + (ball.y - 350) * 0.15;
+                gk.x += (targetX - gk.x) * 0.05;
+                gk.y += (targetY - gk.y) * 0.05;
                 gk.x = Math.max(gk.team === 'home' ? 25 : 1150 - 25, Math.min(gk.team === 'home' ? 100 : 1175, gk
                 .x));
-                gk.y = Math.max(260, Math.min(440, gk.y));
+                gk.y = Math.max(270, Math.min(430, gk.y));
 
-                // Ловля мяча
                 if (Math.hypot(gk.x - ball.x, gk.y - ball.y) < gk.radius + BALL_RADIUS + 3) {
                     const distToGoal = gk.team === 'home' ? ball.x : FIELD_W - ball.x;
-                    if (distToGoal < 180 && Math.abs(ball.vx) < 6) {
+                    if (distToGoal < 180 && Math.abs(ball.vx) < 4) {
                         ball.vx *= -0.2;
                         ball.vy *= -0.2;
-                        if (Math.abs(ball.vx) < 1.5) {
-                            // Выбиваем
+                        if (Math.abs(ball.vx) < 0.8) {
                             const ang = gk.team === 'home' ? -0.2 + Math.random() * 0.4 : Math.PI - 0.2 + Math
                             .random() * 0.4;
-                            ball.vx = (gk.team === 'home' ? 1 : -1) * (3 + Math.random() * 3);
-                            ball.vy = (Math.random() - 0.5) * 3;
-                            // Сброс владения
+                            ball.vx = (gk.team === 'home' ? 1 : -1) * (2 + Math.random() * 2);
+                            ball.vy = (Math.random() - 0.5) * 2;
                             players.forEach(p => p.hasBall = false);
                         }
                     }
                 }
             });
 
-            // Столкновения с мячом - плавное
-            players.forEach(p => {
-                if (!p.hasBall) {
-                    const dist = Math.hypot(p.x - ball.x, p.y - ball.y);
-                    if (dist < p.radius + BALL_RADIUS + 1) {
-                        const ang = Math.atan2(ball.y - p.y, ball.x - p.x);
-                        // Отталкиваем мяч в сторону игрока
-                        const power = 1.0 + Math.random() * 1.0;
-                        ball.vx = power * Math.cos(ang);
-                        ball.vy = power * Math.sin(ang);
-                        players.forEach(p2 => p2.hasBall = false);
-                        p.hasBall = true;
-                        if (!p.isPlayer) {
-                            setTimeout(() => botAction(p, diff), 200 + Math.random() * 200);
+            // Столкновения с мячом
+            if (!isPassing) {
+                players.forEach(p => {
+                    if (!p.hasBall) {
+                        const dist = Math.hypot(p.x - ball.x, p.y - ball.y);
+                        if (dist < p.radius + BALL_RADIUS + 1) {
+                            const ang = Math.atan2(ball.y - p.y, ball.x - p.x);
+                            const power = 0.6 + Math.random() * 0.6;
+                            ball.vx = power * Math.cos(ang);
+                            ball.vy = power * Math.sin(ang);
+                            players.forEach(p2 => p2.hasBall = false);
+                            p.hasBall = true;
+                            if (!p.isPlayer) {
+                                setTimeout(() => botAction(p, diff), 300 + Math.random() * 300);
+                            }
                         }
                     }
-                }
-            });
+                });
+            }
 
             if (goalCooldown > 0) goalCooldown--;
         }
@@ -1473,72 +1509,63 @@
             let targetX = 600,
                 targetY = 350;
 
-            // Бот с мячом
             if (p.hasBall) {
-                // Идем к воротам
+                // Медленно двигается к воротам
                 targetX = isHome ? FIELD_W - 120 : 120;
                 targetY = 350 + (Math.random() - 0.5) * 60;
 
-                // Если рядом защитник - пас
                 const nearbyEnemy = players.some(p2 =>
-                    p2.team !== p.team && Math.hypot(p.x - p2.x, p.y - p2.y) < 90
+                    p2.team !== p.team && Math.hypot(p.x - p2.x, p.y - p2.y) < 80
                 );
                 if (nearbyEnemy && Math.random() < 0.4 * diff.accuracy && p.passCooldown === 0) {
                     botAction(p, diff);
                     return;
                 }
 
-                // Удар если близко к воротам
                 const distToGoal = isHome ? FIELD_W - p.x : p.x;
-                if (distToGoal < 250 && Math.random() < 0.3 * diff.accuracy) {
+                if (distToGoal < 250 && Math.random() < 0.25 * diff.accuracy) {
                     botAction(p, diff);
                     return;
                 }
             } else {
-                // Позиционирование
                 if (role === 'defender') {
-                    targetX = isHome ? 180 + Math.random() * 80 : 1020 - Math.random() * 80;
-                    targetY = 350 + (Math.random() - 0.5) * 120;
+                    targetX = isHome ? 180 + Math.random() * 60 : 1020 - Math.random() * 60;
+                    targetY = 350 + (Math.random() - 0.5) * 100;
                 } else if (role === 'midfielder') {
                     targetX = isHome ? 350 + Math.random() * 150 : 850 - Math.random() * 150;
-                    targetY = 350 + (Math.random() - 0.5) * 150;
-                } else { // forward
-                    targetX = isHome ? 950 + Math.random() * 80 : 250 - Math.random() * 80;
                     targetY = 350 + (Math.random() - 0.5) * 120;
+                } else {
+                    targetX = isHome ? 950 + Math.random() * 60 : 250 - Math.random() * 60;
+                    targetY = 350 + (Math.random() - 0.5) * 100;
                 }
 
                 // Если мяч рядом - перехват
                 const distToBall = Math.hypot(p.x - ball.x, p.y - ball.y);
-                if (distToBall < 180 && !players.some(p2 => p2.team === p.team && p2.hasBall)) {
-                    targetX = ball.x + (isHome ? 20 : -20);
+                if (distToBall < 150 && !players.some(p2 => p2.team === p.team && p2.hasBall)) {
+                    targetX = ball.x + (isHome ? 15 : -15);
                     targetY = ball.y;
                 }
 
-                // Отбор у противника
+                // Отбор
                 players.forEach(p2 => {
-                    if (p2.team !== p.team && p2.hasBall && Math.hypot(p.x - p2.x, p.y - p2.y) < 50) {
-                        if (Math.random() < diff.aggression * 0.4) {
+                    if (p2.team !== p.team && p2.hasBall && Math.hypot(p.x - p2.x, p.y - p2.y) < 45) {
+                        if (Math.random() < diff.aggression * 0.25) {
                             const ang = Math.atan2(p2.y - p.y, p2.x - p.x);
-                            ball.vx = 2.5 * Math.cos(ang + (Math.random() - 0.5) * 0.5);
-                            ball.vy = 2.5 * Math.sin(ang + (Math.random() - 0.5) * 0.5);
+                            ball.vx = 1.5 * Math.cos(ang + (Math.random() - 0.5) * 0.5);
+                            ball.vy = 1.5 * Math.sin(ang + (Math.random() - 0.5) * 0.5);
                             p2.hasBall = false;
                             p.hasBall = true;
                         }
                     }
                 });
-
-                // Если мяч ушел далеко - возвращаемся в позицию
-                if (distToBall > 400) {
-                    // остаемся на позиции
-                }
             }
 
-            // Анти-застревание - если стоит на месте
-            if (Math.abs(p.x - p.lastX) < 0.5 && Math.abs(p.y - p.lastY) < 0.5) {
+            // Анти-застревание
+            if (Math.abs(p.x - p.lastX) < 0.3 && Math.abs(p.y - p.lastY) < 0.3) {
                 p.stuckTimer++;
-                if (p.stuckTimer > 30) {
-                    targetX += (Math.random() - 0.5) * 120;
-                    targetY += (Math.random() - 0.5) * 120;
+                if (p.stuckTimer > 40) {
+                    targetX += (Math.random() - 0.5) * 100;
+                    targetY += (Math.random() - 0.5) * 100;
                     p.stuckTimer = 0;
                 }
             } else {
@@ -1547,12 +1574,11 @@
             p.lastX = p.x;
             p.lastY = p.y;
 
-            // Движение
             const dx = targetX - p.x;
             const dy = targetY - p.y;
             const dist = Math.hypot(dx, dy);
             if (dist > 3) {
-                const speed = BOT_SPEED_BASE * (0.7 + diff.speed * 0.5) * (0.9 + Math.random() * 0.2);
+                const speed = BOT_SPEED_BASE * (0.6 + diff.speed * 0.4) * (0.9 + Math.random() * 0.2);
                 const step = Math.min(speed, dist);
                 p.x += (dx / dist) * step;
                 p.y += (dy / dist) * step;
@@ -1568,70 +1594,69 @@
             const isHome = p.team === 'home';
             const r = Math.random();
 
-            // Пас - 55%
-            if (r < 0.55) {
+            // Пас - 50%
+            if (r < 0.5) {
                 const teammates = players.filter(p2 => p2.team === p.team && p2.id !== p.id);
                 if (teammates.length > 0) {
-                    // Выбираем самого открытого
                     let best = null;
                     let bestScore = -999;
                     teammates.forEach(tm => {
                         const distToEnemy = Math.min(...players.filter(p2 => p2.team !== p.team)
                             .map(p2 => Math.hypot(tm.x - p2.x, tm.y - p2.y)));
-                        const score = -Math.hypot(tm.x - p.x, tm.y - p.y) * 0.3 + distToEnemy * 0.5;
+                        const score = -Math.hypot(tm.x - p.x, tm.y - p.y) * 0.3 + distToEnemy * 0.4;
                         if (score > bestScore) { bestScore = score;
                             best = tm; }
                     });
                     if (best) {
+                        isPassing = true;
                         const ang = Math.atan2(best.y - p.y, best.x - p.x);
-                        const power = 2.5 + Math.random() * 2.5;
-                        ball.vx = power * Math.cos(ang + (Math.random() - 0.5) * 0.1);
-                        ball.vy = power * Math.sin(ang + (Math.random() - 0.5) * 0.1);
+                        const power = 2 + Math.random() * 2;
+                        ball.vx = power * Math.cos(ang + (Math.random() - 0.5) * 0.08);
+                        ball.vy = power * Math.sin(ang + (Math.random() - 0.5) * 0.08);
                         p.hasBall = false;
-                        p.passCooldown = 15;
-                        // Передаем мяч партнеру через 100мс
+                        p.passCooldown = 20;
                         setTimeout(() => {
+                            players.forEach(p2 => p2.hasBall = false);
                             if (best) {
-                                players.forEach(p2 => p2.hasBall = false);
                                 best.hasBall = true;
                             }
-                        }, 100);
+                            isPassing = false;
+                        }, 150);
                         return;
                     }
                 }
             }
 
-            // Удар - 30%
-            if (r < 0.85) {
+            // Удар - 25%
+            if (r < 0.75) {
                 const goalX = isHome ? FIELD_W - 50 : 50;
-                const goalY = 350 + (Math.random() - 0.5) * 70;
+                const goalY = 350 + (Math.random() - 0.5) * 60;
                 const ang = Math.atan2(goalY - p.y, goalX - p.x);
-                const power = 3 + Math.random() * 4;
-                ball.vx = power * Math.cos(ang + (Math.random() - 0.5) * 0.2);
-                ball.vy = power * Math.sin(ang + (Math.random() - 0.5) * 0.2);
+                const power = 2.5 + Math.random() * 3.5;
+                ball.vx = power * Math.cos(ang + (Math.random() - 0.5) * 0.15);
+                ball.vy = power * Math.sin(ang + (Math.random() - 0.5) * 0.15);
                 p.hasBall = false;
                 return;
             }
 
-            // Дриблинг - 15%
+            // Дриблинг
             const goalX = isHome ? FIELD_W - 120 : 120;
-            const goalY = 350 + (Math.random() - 0.5) * 50;
+            const goalY = 350 + (Math.random() - 0.5) * 40;
             const ang = Math.atan2(goalY - p.y, goalX - p.x);
-            ball.vx = 1.8 * Math.cos(ang);
-            ball.vy = 1.8 * Math.sin(ang);
+            ball.vx = 1.5 * Math.cos(ang);
+            ball.vy = 1.5 * Math.sin(ang);
             p.hasBall = false;
             setTimeout(() => {
                 players.forEach(p2 => p2.hasBall = false);
                 p.hasBall = true;
-            }, 150);
+            }, 200);
         }
 
         // ---- ГОЛЫ ----
         function checkGoals() {
             if (goalCooldown > 0) return;
 
-            // Левые ворота
-            if (ball.x < 35 && ball.y > 350 - GOAL_HEIGHT / 2 && ball.y < 350 + GOAL_HEIGHT / 2) {
+            if (ball.x < 30 && ball.y > 350 - GOAL_HEIGHT / 2 && ball.y < 350 + GOAL_HEIGHT / 2) {
                 if (ball.vx < -0.3) {
                     awayScore++;
                     goalCooldown = 60;
@@ -1641,8 +1666,7 @@
                     else resetBall();
                 }
             }
-            // Правые ворота
-            if (ball.x > FIELD_W - 35 && ball.y > 350 - GOAL_HEIGHT / 2 && ball.y < 350 + GOAL_HEIGHT / 2) {
+            if (ball.x > FIELD_W - 30 && ball.y > 350 - GOAL_HEIGHT / 2 && ball.y < 350 + GOAL_HEIGHT / 2) {
                 if (ball.vx > 0.3) {
                     homeScore++;
                     goalCooldown = 60;
@@ -1657,10 +1681,11 @@
         function resetBall() {
             ball.x = 600;
             ball.y = 350;
-            ball.vx = (Math.random() - 0.5) * 1.5;
-            ball.vy = (Math.random() - 0.5) * 1.5;
+            ball.vx = (Math.random() - 0.5) * 1;
+            ball.vy = (Math.random() - 0.5) * 1;
             players.forEach(p => p.hasBall = false);
             players[0].hasBall = true;
+            isPassing = false;
         }
 
         // ---- ЗАВЕРШЕНИЕ МАТЧА ----
@@ -1674,9 +1699,9 @@
                 const diffBonus = difficulty === 'easy' ? 1 : difficulty === 'medium' ? 1.5 : 2;
                 if (isWin) {
                     playerWins++;
-                    const crystalsEarned = Math.floor(40 * diffBonus) + homeScore * 5 + (awayScore === 0 ? 25 : 0);
+                    const crystalsEarned = Math.floor(35 * diffBonus) + homeScore * 5 + (awayScore === 0 ? 20 : 0);
                     playerCrystals += crystalsEarned;
-                    if (homeScore >= 3) playerCrystals += 20;
+                    if (homeScore >= 3) playerCrystals += 15;
                     showMessage('🏆 ПОБЕДА! +' + crystalsEarned + '💎');
                 } else {
                     playerCrystals += 10;
@@ -1687,7 +1712,6 @@
                 updateUI();
             }
 
-            const msg = isWin ? '🏆 ПОБЕДА! ' + homeScore + ':' + awayScore : '💔 ПОРАЖЕНИЕ ' + homeScore + ':' + awayScore;
             document.getElementById('statusBar').textContent = '🏁 ' + (isWin ? 'Победа!' : 'Поражение');
 
             setTimeout(() => {
@@ -1705,20 +1729,20 @@
         // ---- ДЕЙСТВИЯ ИГРОКА ----
         function handleShoot() {
             const p = players.find(p => p.isPlayer);
-            if (!p || !p.hasBall || matchFinished) return;
+            if (!p || !p.hasBall || matchFinished || isPassing) return;
             const isHome = p.team === 'home';
             const goalX = isHome ? FIELD_W - 50 : 50;
-            const goalY = 350 + (Math.random() - 0.5) * 70;
+            const goalY = 350 + (Math.random() - 0.5) * 60;
             const ang = Math.atan2(goalY - p.y, goalX - p.x);
-            const power = 4 + Math.random() * 3.5;
-            ball.vx = power * Math.cos(ang + (Math.random() - 0.5) * 0.25);
-            ball.vy = power * Math.sin(ang + (Math.random() - 0.5) * 0.25);
+            const power = 3.5 + Math.random() * 3;
+            ball.vx = power * Math.cos(ang + (Math.random() - 0.5) * 0.2);
+            ball.vy = power * Math.sin(ang + (Math.random() - 0.5) * 0.2);
             p.hasBall = false;
         }
 
         function handlePass() {
             const p = players.find(p => p.isPlayer);
-            if (!p || !p.hasBall || matchFinished) return;
+            if (!p || !p.hasBall || matchFinished || isPassing) return;
             const teammates = players.filter(p2 => p2.team === p.team && p2.id !== p.id);
             if (teammates.length > 0) {
                 let best = null;
@@ -1730,15 +1754,19 @@
                         best = tm; }
                 });
                 if (best) {
+                    isPassing = true;
                     const ang = Math.atan2(best.y - p.y, best.x - p.x);
-                    const power = 2.5 + Math.random() * 2.5;
-                    ball.vx = power * Math.cos(ang + (Math.random() - 0.5) * 0.1);
-                    ball.vy = power * Math.sin(ang + (Math.random() - 0.5) * 0.1);
+                    const power = 2 + Math.random() * 2;
+                    ball.vx = power * Math.cos(ang + (Math.random() - 0.5) * 0.08);
+                    ball.vy = power * Math.sin(ang + (Math.random() - 0.5) * 0.08);
                     p.hasBall = false;
                     setTimeout(() => {
                         players.forEach(p2 => p2.hasBall = false);
-                        best.hasBall = true;
-                    }, 80);
+                        if (best) {
+                            best.hasBall = true;
+                        }
+                        isPassing = false;
+                    }, 150);
                 }
             }
         }
@@ -1747,10 +1775,10 @@
             const p = players.find(p => p.isPlayer);
             if (!p || matchFinished) return;
             players.forEach(p2 => {
-                if (p2.team !== p.team && p2.hasBall && Math.hypot(p.x - p2.x, p.y - p2.y) < 50) {
+                if (p2.team !== p.team && p2.hasBall && Math.hypot(p.x - p2.x, p.y - p2.y) < 45) {
                     const ang = Math.atan2(p2.y - p.y, p2.x - p.x);
-                    ball.vx = 2.5 * Math.cos(ang + (Math.random() - 0.5) * 0.5);
-                    ball.vy = 2.5 * Math.sin(ang + (Math.random() - 0.5) * 0.5);
+                    ball.vx = 2 * Math.cos(ang + (Math.random() - 0.5) * 0.4);
+                    ball.vy = 2 * Math.sin(ang + (Math.random() - 0.5) * 0.4);
                     p2.hasBall = false;
                     p.hasBall = true;
                 }
@@ -1776,7 +1804,7 @@
             ctx.fillRect(0, 0, FIELD_W, FIELD_H);
 
             // Разметка
-            ctx.strokeStyle = 'rgba(255,255,255,0.12)';
+            ctx.strokeStyle = 'rgba(255,255,255,0.1)';
             ctx.lineWidth = 2;
             ctx.strokeRect(40, 40, FIELD_W - 80, FIELD_H - 80);
             ctx.beginPath();
@@ -1793,16 +1821,16 @@
             ctx.strokeRect(FIELD_W - 100, FIELD_H / 2 - 60, 60, 120);
 
             // Ворота
-            ctx.fillStyle = 'rgba(255,255,255,0.06)';
+            ctx.fillStyle = 'rgba(255,255,255,0.05)';
             ctx.fillRect(30, FIELD_H / 2 - GOAL_HEIGHT / 2, GOAL_WIDTH, GOAL_HEIGHT);
             ctx.fillRect(FIELD_W - 30 - GOAL_WIDTH, FIELD_H / 2 - GOAL_HEIGHT / 2, GOAL_WIDTH, GOAL_HEIGHT);
-            ctx.strokeStyle = 'rgba(255,255,255,0.4)';
+            ctx.strokeStyle = 'rgba(255,255,255,0.3)';
             ctx.lineWidth = 3;
             ctx.strokeRect(30, FIELD_H / 2 - GOAL_HEIGHT / 2, GOAL_WIDTH, GOAL_HEIGHT);
             ctx.strokeRect(FIELD_W - 30 - GOAL_WIDTH, FIELD_H / 2 - GOAL_HEIGHT / 2, GOAL_WIDTH, GOAL_HEIGHT);
 
             // Сетка
-            ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+            ctx.strokeStyle = 'rgba(255,255,255,0.04)';
             ctx.lineWidth = 1;
             for (let i = 0; i < GOAL_HEIGHT; i += 10) {
                 ctx.beginPath();
@@ -1816,8 +1844,8 @@
             }
 
             // Мяч
-            ctx.shadowColor = 'rgba(0,0,0,0.4)';
-            ctx.shadowBlur = 8;
+            ctx.shadowColor = 'rgba(0,0,0,0.3)';
+            ctx.shadowBlur = 6;
             ctx.beginPath();
             ctx.arc(ball.x, ball.y, BALL_RADIUS, 0, Math.PI * 2);
             ctx.fillStyle = 'white';
@@ -1830,7 +1858,7 @@
             // Вратари
             goalkeepers.forEach(gk => {
                 ctx.shadowColor = 'rgba(0,0,0,0.3)';
-                ctx.shadowBlur = 8;
+                ctx.shadowBlur = 6;
                 ctx.beginPath();
                 ctx.arc(gk.x, gk.y, gk.radius, 0, Math.PI * 2);
                 const grad = ctx.createRadialGradient(gk.x - 5, gk.y - 5, 3, gk.x, gk.y, gk.radius);
@@ -1842,7 +1870,7 @@
                 ctx.lineWidth = 2;
                 ctx.stroke();
                 ctx.shadowBlur = 0;
-                ctx.fillStyle = 'rgba(255,255,255,0.4)';
+                ctx.fillStyle = 'rgba(255,255,255,0.3)';
                 ctx.font = 'bold 14px Arial';
                 ctx.textAlign = 'center';
                 ctx.fillText('🧤', gk.x, gk.y - gk.radius - 8);
@@ -1851,7 +1879,7 @@
             // Игроки
             players.forEach(p => {
                 ctx.shadowColor = 'rgba(0,0,0,0.3)';
-                ctx.shadowBlur = 8;
+                ctx.shadowBlur = 6;
                 ctx.beginPath();
                 ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
                 if (p.isPlayer) {
@@ -1874,8 +1902,8 @@
                 ctx.fillText(p.name, p.x, p.y - p.radius - 10);
 
                 if (p.hasBall) {
-                    ctx.shadowColor = 'rgba(255,215,0,0.5)';
-                    ctx.shadowBlur = 15;
+                    ctx.shadowColor = 'rgba(255,215,0,0.3)';
+                    ctx.shadowBlur = 12;
                     ctx.fillStyle = '#ffd700';
                     ctx.beginPath();
                     ctx.arc(p.x, p.y, 5, 0, Math.PI * 2);
@@ -1885,32 +1913,30 @@
 
                 if (p.isPlayer) {
                     ctx.shadowColor = '#ffd700';
-                    ctx.shadowBlur = 20;
+                    ctx.shadowBlur = 15;
                     ctx.beginPath();
                     ctx.arc(p.x, p.y, p.radius + 4, 0, Math.PI * 2);
-                    ctx.strokeStyle = 'rgba(255,215,0,0.3)';
+                    ctx.strokeStyle = 'rgba(255,215,0,0.25)';
                     ctx.lineWidth = 2;
                     ctx.stroke();
                     ctx.shadowBlur = 0;
                 }
 
-                // Роль
                 const roleEmojis = { defender: '🛡️', midfielder: '🎯', forward: '⚡' };
                 ctx.font = '12px Arial';
-                ctx.fillStyle = 'rgba(255,255,255,0.2)';
+                ctx.fillStyle = 'rgba(255,255,255,0.15)';
                 ctx.fillText(roleEmojis[p.role] || '', p.x + p.radius + 8, p.y + 4);
             });
 
             ctx.restore();
 
-            // Счет
             if (gameState === 'playing') {
                 ctx.fillStyle = 'rgba(0,0,0,0.5)';
-                ctx.fillRect(w / 2 - 50, 6, 100, 30);
+                ctx.fillRect(w / 2 - 45, 6, 90, 28);
                 ctx.fillStyle = 'white';
-                ctx.font = 'bold 20px Arial';
+                ctx.font = 'bold 18px Arial';
                 ctx.textAlign = 'center';
-                ctx.fillText(homeScore + ' : ' + awayScore, w / 2, 28);
+                ctx.fillText(homeScore + ' : ' + awayScore, w / 2, 27);
             }
         }
 
@@ -2034,12 +2060,11 @@
             showMessage('🌐 Онлайн режим в разработке!\nБудут: 1x1, 2x2 матчи с игроками');
         }
 
-        // ---- СТАРТ ----
-        console.log('⚽ STREET FOOTBALL LEGENDS v2.0 загружена!');
+        console.log('⚽ STREET FOOTBALL LEGENDS v3.0 загружена!');
         console.log('👤 Игрок:', playerName || 'Гость');
         console.log('⭐ Рейтинг:', playerRating);
         console.log('💎 Кристаллы:', playerCrystals);
-        console.log('🎮 Управление: Джостик + кнопки (или WASD/Стрелки)');
+        console.log('🎮 Управление: Джостик + кнопки');
         console.log('📦 Паки: Открываются из меню "ПАКИ И СКИНЫ"');
     </script>
 </body>
