@@ -408,12 +408,7 @@ def home():
             '/api/buy_pack',
             '/api/open_pack',
             '/api/equip_skin',
-            '/api/health',
-            '/api/lobby/create',
-            '/api/lobby/list',
-            '/api/lobby/join',
-            '/api/lobby/start',
-            '/api/lobby/leave'
+            '/api/health'
         ]
     })
 
@@ -561,24 +556,19 @@ def equip_skin():
 # ==================== ЛОББИ API =============================
 # ============================================================
 
-# Хранилище всех лобби (в памяти сервера)
 lobbies = {}
 
-# 1. СОЗДАНИЕ ЛОББИ
 @app.route('/api/lobby/create', methods=['POST'])
 def create_lobby():
     try:
         data = request.json
-        if not data.get('host'):
-            return jsonify({'error': 'Имя хоста обязательно'}), 400
-        
         lobby_id = 'lobby_' + str(uuid.uuid4())[:8]
         lobbies[lobby_id] = {
             'id': lobby_id,
-            'name': data.get('name', 'Лобби ' + data['host']),
-            'host': data['host'],
+            'name': data.get('name', 'Лобби'),
+            'host': data.get('host'),
             'mode': data.get('mode', '1x1'),
-            'players': [data['host']],
+            'players': [data.get('host')],
             'status': 'waiting',
             'created_at': datetime.now().isoformat()
         }
@@ -586,7 +576,6 @@ def create_lobby():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-# 2. ПОЛУЧЕНИЕ СПИСКА ЛОББИ
 @app.route('/api/lobby/list', methods=['GET'])
 def list_lobbies():
     try:
@@ -595,7 +584,6 @@ def list_lobbies():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-# 3. ПРИСОЕДИНЕНИЕ К ЛОББИ
 @app.route('/api/lobby/join', methods=['POST'])
 def join_lobby():
     try:
@@ -603,44 +591,33 @@ def join_lobby():
         lobby_id = data.get('lobby_id')
         player = data.get('player')
         
-        if not lobby_id or not player:
-            return jsonify({'error': 'lobby_id и player обязательны'}), 400
-        
         if lobby_id not in lobbies:
             return jsonify({'error': 'Лобби не найдено'}), 404
-        
         lobby = lobbies[lobby_id]
         if len(lobby['players']) >= 2:
             return jsonify({'error': 'Лобби заполнено'}), 400
         if player in lobby['players']:
             return jsonify({'error': 'Вы уже в лобби'}), 400
-        
         lobby['players'].append(player)
         return jsonify({'success': True, 'lobby': lobby})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-# 4. НАЧАЛО МАТЧА
 @app.route('/api/lobby/start', methods=['POST'])
 def start_lobby():
     try:
         data = request.json
         lobby_id = data.get('lobby_id')
-        if not lobby_id:
-            return jsonify({'error': 'lobby_id обязателен'}), 400
         if lobby_id not in lobbies:
             return jsonify({'error': 'Лобби не найдено'}), 404
-        
         lobby = lobbies[lobby_id]
         if len(lobby['players']) < 2:
             return jsonify({'error': 'Нужно минимум 2 игрока'}), 400
-        
         lobby['status'] = 'playing'
         return jsonify({'success': True, 'lobby': lobby})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-# 5. ВЫХОД ИЗ ЛОББИ
 @app.route('/api/lobby/leave', methods=['POST'])
 def leave_lobby():
     try:
@@ -648,21 +625,15 @@ def leave_lobby():
         lobby_id = data.get('lobby_id')
         player = data.get('player')
         
-        if not lobby_id or not player:
-            return jsonify({'error': 'lobby_id и player обязательны'}), 400
         if lobby_id not in lobbies:
             return jsonify({'error': 'Лобби не найдено'}), 404
-        
         lobby = lobbies[lobby_id]
         lobby['players'] = [p for p in lobby['players'] if p != player]
-        
         if len(lobby['players']) == 0:
             del lobbies[lobby_id]
             return jsonify({'success': True, 'deleted': True})
-        
         if lobby['host'] == player and len(lobby['players']) > 0:
             lobby['host'] = lobby['players'][0]
-        
         return jsonify({'success': True, 'lobby': lobby})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
