@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>⚽ STREET FOOTBALL LEGENDS</title>
     <style>
-        /* ===== ВЕСЬ CSS ТОТ ЖЕ ===== */
+        /* ===== ВЕСЬ CSS ТОТ ЖЕ (полный) ===== */
         * { margin: 0; padding: 0; box-sizing: border-box; touch-action: none; user-select: none; -webkit-touch-callout: none; }
         body { background: #0d1b2a; overflow: hidden; font-family: Arial, sans-serif; position: fixed; width: 100%; height: 100%; color: white; }
         canvas { display: block; width: 100vw; height: 100vh; background: #1b4332; }
@@ -20,6 +20,7 @@
         .btn-purple { background: rgba(150,50,200,0.7); border-color: #b197fc; }
         .btn-gray { background: rgba(100,100,120,0.7); border-color: rgba(255,255,255,0.2); }
         .btn-orange { background: rgba(255,150,50,0.7); border-color: #ffa94d; }
+        .btn-disabled { opacity: 0.4; pointer-events: none !important; cursor: not-allowed; }
         #menu-container { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; pointer-events: none; width: 94%; max-width: 440px; max-height: 95vh; overflow-y: auto; }
         #menu-container .title { color: white; font-size: 28px; font-weight: bold; text-shadow: 0 0 30px rgba(0,0,0,0.8); margin-bottom: 6px; }
         #menu-container .subtitle { color: rgba(255,255,255,0.6); font-size: 12px; margin-bottom: 10px; }
@@ -168,17 +169,17 @@
                     <button class="btn" id="diffHard">🔴 Сложный</button>
                 </div>
             </div>
-            <button class="btn btn-green btn-full" onclick="startOfflineGame()">⚔️ ОФФЛАЙН МАТЧ</button>
+            <button class="btn btn-green btn-full" id="btn-offline" onclick="startOfflineGame()">⚔️ ОФФЛАЙН МАТЧ</button>
             <div id="guestMenu">
-                <button class="btn btn-blue btn-full" onclick="showLogin()">🔑 Войти</button>
-                <button class="btn btn-purple btn-full" onclick="showRegister()">📝 Регистрация</button>
+                <button class="btn btn-blue btn-full" id="btn-login" onclick="showLogin()">🔑 Войти</button>
+                <button class="btn btn-purple btn-full" id="btn-register" onclick="showRegister()">📝 Регистрация</button>
             </div>
             <div id="userMenu" style="display:none;">
-                <button class="btn btn-orange btn-full" onclick="showOnlineUI()">🌐 ОНЛАЙН</button>
-                <button class="btn btn-gold btn-full" onclick="showPacksUI()">📦 ПАКИ</button>
-                <button class="btn btn-purple btn-full" onclick="showInventoryUI()">🎒 ИНВЕНТАРЬ</button>
+                <button class="btn btn-orange btn-full" id="btn-online" onclick="showOnlineUI()">🌐 ОНЛАЙН</button>
+                <button class="btn btn-gold btn-full" id="btn-packs" onclick="showPacksUI()">📦 ПАКИ</button>
+                <button class="btn btn-purple btn-full" id="btn-inventory" onclick="showInventoryUI()">🎒 ИНВЕНТАРЬ</button>
             </div>
-            <button class="btn btn-gold btn-full" onclick="showLeaderboard()">📊 Рейтинг</button>
+            <button class="btn btn-gold btn-full" id="btn-leaderboard" onclick="showLeaderboard()">📊 Рейтинг</button>
         </div>
 
         <div id="login-container">
@@ -218,7 +219,8 @@
             <div id="online-container">
                 <h2>🌐 ОНЛАЙН</h2>
                 <div class="online-status-text" id="online-status-text">⚡ Выберите режим</div>
-                <button class="btn btn-orange online-btn" onclick="showCreateLobbyUI()">🏠 СОЗДАТЬ ЛОББИ</button>
+                <button class="btn btn-orange online-btn" onclick="startRandomMatch()">🎲 РАНДОМНЫЙ МАТЧ</button>
+                <button class="btn btn-blue online-btn" onclick="showCreateLobbyUI()">🏠 СОЗДАТЬ ЛОББИ</button>
                 <button class="btn btn-blue online-btn" onclick="showFindLobbyUI()">🔍 НАЙТИ ЛОББИ</button>
                 <button class="btn btn-gray close-online" onclick="closeOnlineUI()">↩️ Назад</button>
             </div>
@@ -315,6 +317,9 @@
         let opponentName = '';
         let syncInterval = null;
 
+        // ---- БЛОКИРОВКА КНОПОК ----
+        let isInOnlineFlow = false;
+
         // ---- API ----
         const SERVER_URL = 'https://machcup-mobile-server.onrender.com';
 
@@ -338,6 +343,21 @@
             } catch (e) {
                 return { error: 'Ошибка соединения с сервером' };
             }
+        }
+
+        // ---- БЛОКИРОВКА КНОПОК ----
+        function setButtonsEnabled(enabled) {
+            const btns = ['btn-offline', 'btn-login', 'btn-register', 'btn-online', 'btn-packs', 'btn-inventory', 'btn-leaderboard'];
+            btns.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) {
+                    if (!enabled) {
+                        el.classList.add('btn-disabled');
+                    } else {
+                        el.classList.remove('btn-disabled');
+                    }
+                }
+            });
         }
 
         // ---- СКИНЫ И ПАКИ ----
@@ -632,6 +652,42 @@
         // ==================== ОНЛАЙН ================================
         // ============================================================
 
+        // ---- РАНДОМНЫЙ МАТЧ ----
+        async function startRandomMatch() {
+            if (!playerName) {
+                showMessage('❌ Сначала войдите в аккаунт!');
+                return;
+            }
+
+            closeOnlineUI();
+            showMessage('🔍 Поиск соперника...');
+
+            // Ищем доступные лобби
+            const result = await apiGet('/api/lobby/list');
+
+            if (result.error) {
+                showMessage('❌ Ошибка поиска');
+                return;
+            }
+
+            // Фильтруем ожидающие лобби (где есть место)
+            const available = result.filter(l => l.status === 'waiting' && l.players.length < 2 && l.host !== playerName);
+
+            if (available.length > 0) {
+                // Присоединяемся к первому доступному лобби
+                const lobby = available[0];
+                await joinLobby(lobby.id);
+            } else {
+                // Создаём новое лобби
+                showMessage('🔄 Создаём новое лобби...');
+                document.getElementById('lobbyNameInput').value = 'Рандом ' + playerName;
+                document.querySelector('#create-lobby-container .mode-select .btn:first-child').classList.add('active');
+                lobbyMode = '1x1';
+                await createLobby();
+            }
+        }
+
+        // ---- ОНЛАЙН UI ----
         function showOnlineUI() {
             if (!playerName) {
                 showMessage('❌ Сначала войдите в аккаунт!');
@@ -679,11 +735,14 @@
 
         function showLobbyUI() {
             document.getElementById('lobby-overlay').style.display = 'flex';
+            // Блокируем кнопки в меню
+            setButtonsEnabled(false);
             updateLobbyUI();
         }
 
         function closeLobbyUI() {
             document.getElementById('lobby-overlay').style.display = 'none';
+            setButtonsEnabled(true);
         }
 
         // ---- СОЗДАНИЕ ЛОББИ ----
@@ -949,6 +1008,7 @@
             setupActionButtons();
             setupKeyboard();
             gameLoop();
+            setButtonsEnabled(true);
         };
 
         function resizeCanvas() {
@@ -1661,6 +1721,7 @@
                 document.getElementById('online-status').style.display = 'none';
                 isOnline = false;
                 updateUI();
+                setButtonsEnabled(true);
             }, 2500);
         }
 
@@ -1995,11 +2056,12 @@
             document.getElementById('leaderboard').style.display = 'none';
         }
 
-        console.log('⚽ STREET FOOTBALL LEGENDS v10.0 загружена!');
+        console.log('⚽ STREET FOOTBALL LEGENDS v11.0 загружена!');
         console.log('👤 Игрок:', playerName || 'Гость');
         console.log('⭐ Рейтинг:', playerRating);
         console.log('💎 Кристаллы:', playerCrystals);
-        console.log('🌐 Онлайн синхронизация включена!');
+        console.log('🌐 Онлайн: рандомный матч + лобби');
+        console.log('🔒 Кнопки блокируются в лобби');
     </script>
 </body>
 </html>
