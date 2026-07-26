@@ -9,11 +9,10 @@ import time
 import math
 import threading
 from datetime import datetime
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 
-app = Flask(__name__)
-app.config['SECRET_KEY'] = 'your-secret-key-here'
+app = Flask(__name__, static_folder='../client', static_url_path='')
 CORS(app, origins=['*'])
 
 # ============================================================
@@ -51,13 +50,18 @@ class Match:
         self.status = 'playing'
         self.goal_cooldown = 0
         self.last_update = time.time()
+        self.players_list = players_list
         
         self.init_players(players_list)
+        print(f'🏟️ Матч {match_id} создан для игроков: {players_list}')
     
     def init_players(self, players_list):
+        """Инициализация игроков"""
+        # 1x1: один игрок дома, один в гостях
         home_positions = [(250, 350)]
         away_positions = [(950, 350)]
         
+        # Если больше игроков - расширяем
         if len(players_list) > 2:
             home_positions = [(250, 290), (250, 410)]
             away_positions = [(950, 290), (950, 410)]
@@ -84,11 +88,13 @@ class Match:
                 'moving': False,
                 'radius': PLAYER_RADIUS
             }
+            print(f'👤 Игрок {name} на позиции {pos} команда {team}')
         
         if players_list:
             first = players_list[0]
             self.ball['x'] = self.players[first]['x'] + 22
             self.ball['y'] = self.players[first]['y']
+            print(f'⚽ Мяч у {first}')
     
     def start_move(self, player_name, direction):
         if player_name not in self.players:
@@ -110,6 +116,7 @@ class Match:
             self.ball['vx'] = player['vx']
             self.ball['vy'] = player['vy']
         
+        print(f'▶️ {player_name} начал движение ({dx}, {dy})')
         return True
     
     def stop_move(self, player_name):
@@ -125,6 +132,7 @@ class Match:
             self.ball['vx'] = 0
             self.ball['vy'] = 0
         
+        print(f'⏹️ {player_name} остановился')
         return True
     
     def shoot(self, player_name, target_x, target_y):
@@ -150,6 +158,8 @@ class Match:
             self.ball['vy'] = power * math.sin(angle)
             player['hasBall'] = False
             
+            print(f'⚽ {player_name} ударил!')
+            
             return {
                 'ball_vx': self.ball['vx'],
                 'ball_vy': self.ball['vy'],
@@ -174,17 +184,20 @@ class Match:
                     self.ball['y'] = player['y']
                     self.ball['vx'] = 0
                     self.ball['vy'] = 0
+                    print(f'🛡️ {player_name} отобрал мяч у {p["name"]}')
                     return {'success': True, 'new_owner': player_name}
         
         return {'success': False}
     
     def update(self):
+        """Обновление состояния матча (вызывается 30 раз в секунду)"""
         if self.status != 'playing':
             return
         
         self.time += 1/30
         self.goal_cooldown = max(0, self.goal_cooldown - 1)
         
+        # Обновление игроков
         for name, player in self.players.items():
             if player['moving']:
                 player['x'] += player['vx']
@@ -199,6 +212,7 @@ class Match:
                     self.ball['vx'] = 0
                     self.ball['vy'] = 0
         
+        # Обновление мяча
         if self.ball['vx'] != 0 or self.ball['vy'] != 0:
             self.ball['x'] += self.ball['vx']
             self.ball['y'] += self.ball['vy']
@@ -210,6 +224,7 @@ class Match:
             if abs(self.ball['vy']) < 0.05:
                 self.ball['vy'] = 0
             
+            # Столкновения с границами
             margin = 40
             if self.ball['x'] < margin + BALL_RADIUS:
                 self.ball['x'] = margin + BALL_RADIUS
@@ -223,25 +238,44 @@ class Match:
             if self.ball['y'] > FIELD_H - margin - BALL_RADIUS:
                 self.ball['y'] = FIELD_H - margin - BALL_RADIUS
                 self.ball['vy'] = -abs(self.ball['vy']) * 0.3
+            
+            # Столкновения с игроками
+            for name, player in self.players.items():
+                if not player['hasBall']:
+                    dist = math.sqrt((self.ball['x']-player['x'])**2 + (self.ball['y']-player['y'])**2)
+                    if dist < player['radius'] + BALL_RADIUS + 2:
+                        angle = math.atan2(self.ball['y']-player['y'], self.ball['x']-player['x'])
+                        power = 0.4 + random.random() * 0.4
+                        self.ball['vx'] = power * math.cos(angle)
+                        self.ball['vy'] = power * math.sin(angle)
+                        for p in self.players.values():
+                            p['hasBall'] = False
+                        player['hasBall'] = True
+                        print(f'🔄 {name} подобрал мяч')
         
+        # Проверка голов
         self.check_goals()
     
     def check_goals(self):
         if self.goal_cooldown > 0:
             return
         
+        # Левые ворота (команда Б забивает)
         if self.ball['x'] < 35 and self.ball['y'] > 260 and self.ball['y'] < 440:
             if self.ball['vx'] < -0.2:
                 self.score['away'] += 1
                 self.goal_cooldown = 60
                 self.reset_ball()
+                print(f'⚽ ГОЛ! Команда Б забила! ({self.score["away"]})')
                 return
         
+        # Правые ворота (команда А забивает)
         if self.ball['x'] > 1165 and self.ball['y'] > 260 and self.ball['y'] < 440:
             if self.ball['vx'] > 0.2:
                 self.score['home'] += 1
                 self.goal_cooldown = 60
                 self.reset_ball()
+                print(f'⚽ ГОЛ! Команда А забила! ({self.score["home"]})')
                 return
     
     def reset_ball(self):
@@ -253,8 +287,10 @@ class Match:
             p['hasBall'] = False
         first = list(self.players.keys())[0]
         self.players[first]['hasBall'] = True
+        print(f'🔄 Мяч сброшен, у {first}')
     
     def get_state(self):
+        """Полное состояние матча для отправки клиенту"""
         players_data = {}
         for name, p in self.players.items():
             players_data[name] = {
@@ -262,7 +298,8 @@ class Match:
                 'y': p['y'],
                 'team': p['team'],
                 'hasBall': p['hasBall'],
-                'moving': p['moving']
+                'moving': p['moving'],
+                'name': name
             }
         
         return {
@@ -270,7 +307,9 @@ class Match:
             'ball': self.ball,
             'score': self.score,
             'time': self.time,
-            'status': self.status
+            'status': self.status,
+            'mode': self.mode,
+            'players_list': self.players_list
         }
 
 
@@ -300,6 +339,8 @@ def create_lobby():
             'status': 'waiting',
             'created_at': datetime.now().isoformat()
         }
+        
+        print(f'✅ Лобби создано: {lobby_id} ({host})')
         
         return jsonify({
             'success': True,
@@ -348,6 +389,8 @@ def join_lobby():
         
         lobby['players'].append(player)
         
+        print(f'🔗 {player} присоединился к лобби {lobby_id}')
+        
         return jsonify({
             'success': True,
             'lobby': lobby
@@ -378,14 +421,17 @@ def start_lobby():
         
         lobby['status'] = 'playing'
         
+        # Создаём матч
         match_id = 'match_' + str(uuid.uuid4())[:8]
         match = Match(match_id, lobby['players'], lobby['mode'])
         matches[match_id] = match
-        
-        lobby['match_id'] = match_id
         match_clients[match_id] = lobby['players']
         
-        # Запускаем поток обновления
+        lobby['match_id'] = match_id
+        
+        print(f'⚽ Матч {match_id} начат! Игроки: {lobby["players"]}')
+        
+        # Запускаем поток обновления матча
         def match_loop():
             while match_id in matches:
                 match = matches[match_id]
@@ -446,14 +492,24 @@ def get_lobby(lobby_id):
         return jsonify({'error': str(e)}), 500
 
 
+# ============================================================
+# ==================== API МАТЧА ==============================
+# ============================================================
+
 @app.route('/api/match/state/<match_id>', methods=['GET'])
 def get_match_state(match_id):
+    """Получение полного состояния матча"""
     try:
         if match_id not in matches:
             return jsonify({'error': 'Матч не найден'}), 404
         
         match = matches[match_id]
-        return jsonify(match.get_state())
+        state = match.get_state()
+        
+        # Добавляем ID матча
+        state['match_id'] = match_id
+        
+        return jsonify(state)
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
@@ -538,6 +594,7 @@ def match_leave():
     try:
         data = request.json
         match_id = data.get('match_id')
+        player = data.get('player')
         
         if match_id in matches:
             match = matches[match_id]
@@ -551,8 +608,26 @@ def match_leave():
                         del match_clients[match_id]
             
             threading.Thread(target=delete_match, daemon=True).start()
+            print(f'🚪 Игрок {player} вышел из матча {match_id}')
         
         return jsonify({'success': True})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/match/list', methods=['GET'])
+def list_matches():
+    """Список всех активных матчей (для отладки)"""
+    try:
+        result = []
+        for match_id, match in matches.items():
+            result.append({
+                'id': match_id,
+                'players': match.players_list,
+                'status': match.status,
+                'score': match.score
+            })
+        return jsonify(result)
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
@@ -593,6 +668,7 @@ class Database:
         
         conn.commit()
         conn.close()
+        print('✅ База данных инициализирована')
     
     def create_player(self, name, password_hash):
         conn = sqlite3.connect(self.db_path)
@@ -752,7 +828,8 @@ def home():
             '/api/match/stop',
             '/api/match/shoot',
             '/api/match/tackle',
-            '/api/match/leave'
+            '/api/match/leave',
+            '/api/match/list'
         ]
     })
 
