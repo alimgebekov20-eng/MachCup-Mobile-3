@@ -5,586 +5,86 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>⚽ STREET FOOTBALL - ОНЛАЙН</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            touch-action: none;
-            user-select: none;
-            -webkit-touch-callout: none;
-        }
-        body {
-            background: #0d1b2a;
-            overflow: hidden;
-            font-family: Arial, sans-serif;
-            position: fixed;
-            width: 100%;
-            height: 100%;
-            color: white;
-        }
-        canvas {
-            display: block;
-            width: 100vw;
-            height: 100vh;
-            background: #1b4332;
-        }
-        #ui-overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-            z-index: 10;
-        }
-        .btn {
-            pointer-events: auto;
-            background: rgba(60, 60, 80, 0.85);
-            border: 2px solid rgba(255, 255, 255, 0.2);
-            color: white;
-            font-size: 14px;
-            font-weight: bold;
-            padding: 10px 16px;
-            border-radius: 10px;
-            cursor: pointer;
-            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
-            transition: all 0.2s;
-            touch-action: manipulation;
-            width: 100%;
-            text-align: center;
-        }
-        .btn:active {
-            transform: scale(0.95);
-        }
-        .btn-blue {
-            background: rgba(50, 100, 255, 0.7);
-            border-color: #4d7aff;
-        }
-        .btn-red {
-            background: rgba(200, 50, 50, 0.7);
-            border-color: #ff6b6b;
-        }
-        .btn-green {
-            background: rgba(0, 200, 100, 0.7);
-            border-color: #51cf66;
-        }
-        .btn-gray {
-            background: rgba(100, 100, 120, 0.7);
-            border-color: rgba(255, 255, 255, 0.2);
-        }
-        .btn-orange {
-            background: rgba(255, 150, 50, 0.7);
-            border-color: #ffa94d;
-        }
-        .btn-disabled {
-            opacity: 0.4;
-            pointer-events: none !important;
-            cursor: not-allowed;
-        }
-        #menu-container {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            text-align: center;
-            pointer-events: none;
-            width: 94%;
-            max-width: 440px;
-            max-height: 95vh;
-            overflow-y: auto;
-        }
-        #menu-container .title {
-            color: white;
-            font-size: 28px;
-            font-weight: bold;
-            text-shadow: 0 0 30px rgba(0, 0, 0, 0.8);
-            margin-bottom: 6px;
-        }
-        #menu-container .subtitle {
-            color: rgba(255, 255, 255, 0.6);
-            font-size: 12px;
-            margin-bottom: 10px;
-        }
-        .btn-full {
-            margin: 4px 0;
-            padding: 10px;
-            font-size: 14px;
-        }
-        #score-display {
-            position: absolute;
-            top: 10px;
-            left: 50%;
-            transform: translateX(-50%);
-            color: white;
-            font-size: 24px;
-            font-weight: bold;
-            text-shadow: 0 0 20px rgba(0, 0, 0, 0.8);
-            background: rgba(0, 0, 0, 0.6);
-            padding: 3px 16px;
-            border-radius: 10px;
-            pointer-events: none;
-            z-index: 20;
-            display: none;
-        }
-        #timer-display {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            color: white;
-            font-size: 16px;
-            font-weight: bold;
-            text-shadow: 0 0 20px rgba(0, 0, 0, 0.8);
-            background: rgba(0, 0, 0, 0.5);
-            padding: 3px 10px;
-            border-radius: 8px;
-            pointer-events: none;
-            z-index: 20;
-            display: none;
-        }
-        #statusBar {
-            position: absolute;
-            top: 52px;
-            left: 10px;
-            color: rgba(255, 255, 255, 0.6);
-            font-size: 10px;
-            pointer-events: none;
-            z-index: 10;
-            background: rgba(0, 0, 0, 0.4);
-            padding: 2px 8px;
-            border-radius: 6px;
-            display: none;
-        }
-        #ratingDisplay {
-            position: absolute;
-            top: 52px;
-            right: 10px;
-            color: #ffd700;
-            font-size: 12px;
-            font-weight: bold;
-            pointer-events: none;
-            z-index: 10;
-            background: rgba(0, 0, 0, 0.4);
-            padding: 2px 8px;
-            border-radius: 6px;
-            display: none;
-        }
-        #online-status {
-            position: absolute;
-            top: 52px;
-            left: 50%;
-            transform: translateX(-50%);
-            color: #51cf66;
-            font-size: 11px;
-            font-weight: bold;
-            pointer-events: none;
-            z-index: 10;
-            background: rgba(0, 0, 0, 0.5);
-            padding: 2px 12px;
-            border-radius: 6px;
-            display: none;
-        }
-        #joystick-area {
-            position: absolute;
-            bottom: 80px;
-            left: 20px;
-            width: 130px;
-            height: 130px;
-            pointer-events: auto;
-            z-index: 30;
-            display: none;
-            touch-action: none;
-        }
-        #joystick-base {
-            position: absolute;
-            width: 130px;
-            height: 130px;
-            border-radius: 50%;
-            background: rgba(255, 255, 255, 0.12);
-            border: 3px solid rgba(255, 255, 255, 0.2);
-            backdrop-filter: blur(4px);
-            -webkit-backdrop-filter: blur(4px);
-            box-shadow: 0 0 40px rgba(0, 0, 0, 0.3);
-        }
-        #joystick-thumb {
-            position: absolute;
-            width: 55px;
-            height: 55px;
-            border-radius: 50%;
-            background: radial-gradient(circle at 40% 35%, rgba(255, 255, 255, 0.6), rgba(200, 200, 200, 0.3));
-            border: 2px solid rgba(255, 255, 255, 0.3);
-            left: 50%;
-            top: 50%;
-            transform: translate(-50%, -50%);
-            box-shadow: 0 0 30px rgba(255, 255, 255, 0.1);
-            transition: none;
-            pointer-events: none;
-        }
-        #joystick-center-dot {
-            position: absolute;
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            background: rgba(255, 255, 255, 0.2);
-            left: 50%;
-            top: 50%;
-            transform: translate(-50%, -50%);
-            pointer-events: none;
-        }
-        #action-buttons {
-            position: absolute;
-            bottom: 80px;
-            right: 20px;
-            display: none;
-            flex-direction: column;
-            gap: 10px;
-            pointer-events: none;
-            z-index: 30;
-        }
-        .action-btn {
-            pointer-events: auto;
-            width: 70px;
-            height: 70px;
-            border-radius: 50%;
-            border: 3px solid rgba(255, 255, 255, 0.3);
-            color: white;
-            font-size: 13px;
-            font-weight: bold;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
-            touch-action: manipulation;
-            backdrop-filter: blur(4px);
-            -webkit-backdrop-filter: blur(4px);
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-        }
-        .action-btn:active {
-            transform: scale(0.92);
-        }
-        .btn-shoot {
-            background: radial-gradient(circle at 40% 35%, rgba(255, 80, 80, 0.8), rgba(200, 30, 30, 0.6));
-            border-color: rgba(255, 100, 100, 0.5);
-        }
-        .btn-pass {
-            background: radial-gradient(circle at 40% 35%, rgba(80, 255, 80, 0.8), rgba(30, 200, 30, 0.6));
-            border-color: rgba(100, 255, 100, 0.5);
-        }
-        .btn-tackle {
-            background: radial-gradient(circle at 40% 35%, rgba(80, 80, 255, 0.8), rgba(30, 30, 200, 0.6));
-            border-color: rgba(100, 100, 255, 0.5);
-        }
-        #message {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            color: white;
-            font-size: 26px;
-            font-weight: bold;
-            text-shadow: 0 0 30px rgba(0, 0, 0, 0.9);
-            background: rgba(0, 0, 0, 0.8);
-            padding: 14px 28px;
-            border-radius: 14px;
-            pointer-events: none;
-            z-index: 40;
-            display: none;
-            text-align: center;
-            max-width: 90%;
-        }
-        #lobby-overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.7);
-            backdrop-filter: blur(8px);
-            -webkit-backdrop-filter: blur(8px);
-            z-index: 95;
-            display: none;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-        }
-        #lobby-container {
-            background: rgba(13, 27, 42, 0.95);
-            border-radius: 20px;
-            padding: 20px;
-            width: 100%;
-            max-width: 460px;
-            max-height: 90vh;
-            overflow-y: auto;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            box-shadow: 0 0 60px rgba(0, 0, 0, 0.5);
-        }
-        #lobby-container h2 {
-            color: #ffd700;
-            text-align: center;
-            margin-bottom: 8px;
-            font-size: 20px;
-        }
-        .lobby-info {
-            text-align: center;
-            font-size: 14px;
-            color: rgba(255, 255, 255, 0.6);
-            margin-bottom: 12px;
-        }
-        .lobby-players {
-            background: rgba(255, 255, 255, 0.03);
-            border-radius: 10px;
-            padding: 10px;
-            margin-bottom: 12px;
-        }
-        .lobby-player {
-            padding: 6px 10px;
-            margin: 3px 0;
-            border-radius: 6px;
-            background: rgba(255, 255, 255, 0.05);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        .lobby-player .host-badge {
-            color: #ffd700;
-            font-size: 11px;
-        }
-        .lobby-player .ready-badge {
-            color: #51cf66;
-            font-size: 11px;
-        }
-        .lobby-player .waiting-badge {
-            color: rgba(255, 255, 255, 0.3);
-            font-size: 11px;
-        }
-        #create-lobby-overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.7);
-            backdrop-filter: blur(8px);
-            -webkit-backdrop-filter: blur(8px);
-            z-index: 92;
-            display: none;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-        }
-        #create-lobby-container {
-            background: rgba(13, 27, 42, 0.95);
-            border-radius: 20px;
-            padding: 20px;
-            width: 100%;
-            max-width: 460px;
-            max-height: 90vh;
-            overflow-y: auto;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            box-shadow: 0 0 60px rgba(0, 0, 0, 0.5);
-        }
-        #create-lobby-container h2 {
-            color: #ffd700;
-            text-align: center;
-            margin-bottom: 12px;
-            font-size: 20px;
-        }
-        #create-lobby-container input {
-            width: 100%;
-            padding: 10px;
-            margin: 5px 0;
-            border-radius: 8px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            background: rgba(255, 255, 255, 0.06);
-            color: white;
-            font-size: 14px;
-            pointer-events: auto;
-            outline: none;
-        }
-        #create-lobby-container input::placeholder {
-            color: rgba(255, 255, 255, 0.25);
-        }
-        #create-lobby-container input:focus {
-            border-color: #ffd700;
-        }
-        .mode-select {
-            display: flex;
-            gap: 10px;
-            margin: 10px 0;
-        }
-        .mode-select .btn {
-            flex: 1;
-            padding: 8px;
-            font-size: 13px;
-        }
-        .mode-select .btn.active {
-            background: rgba(255, 215, 0, 0.3) !important;
-            border-color: #ffd700 !important;
-        }
-        #find-lobby-overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.7);
-            backdrop-filter: blur(8px);
-            -webkit-backdrop-filter: blur(8px);
-            z-index: 93;
-            display: none;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-        }
-        #find-lobby-container {
-            background: rgba(13, 27, 42, 0.95);
-            border-radius: 20px;
-            padding: 20px;
-            width: 100%;
-            max-width: 460px;
-            max-height: 90vh;
-            overflow-y: auto;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            box-shadow: 0 0 60px rgba(0, 0, 0, 0.5);
-        }
-        #find-lobby-container h2 {
-            color: #4d7aff;
-            text-align: center;
-            margin-bottom: 12px;
-            font-size: 20px;
-        }
-        .lobby-item {
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 10px;
-            padding: 12px;
-            margin-bottom: 8px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border: 1px solid rgba(255, 255, 255, 0.05);
-        }
-        .lobby-item .lobby-info-text {
-            display: flex;
-            flex-direction: column;
-            align-items: flex-start;
-        }
-        .lobby-item .lobby-name {
-            font-weight: bold;
-            font-size: 14px;
-        }
-        .lobby-item .lobby-desc {
-            font-size: 11px;
-            color: rgba(255, 255, 255, 0.4);
-        }
-        .lobby-item .join-btn {
-            background: rgba(81, 207, 102, 0.2);
-            border: 1px solid rgba(81, 207, 102, 0.3);
-            border-radius: 8px;
-            padding: 6px 16px;
-            color: #51cf66;
-            font-weight: bold;
-            font-size: 12px;
-            cursor: pointer;
-            transition: all 0.2s;
-            pointer-events: auto !important;
-            z-index: 100;
-        }
-        .lobby-item .join-btn:active {
-            transform: scale(0.95);
-            background: rgba(81, 207, 102, 0.4);
-        }
-        .refresh-btn {
-            margin-bottom: 10px;
-        }
-        @media(max-width:600px) {
-            #joystick-area {
-                width: 110px;
-                height: 110px;
-                bottom: 60px;
-                left: 15px;
-            }
-            #joystick-base {
-                width: 110px;
-                height: 110px;
-            }
-            #joystick-thumb {
-                width: 45px;
-                height: 45px;
-            }
-            .action-btn {
-                width: 58px;
-                height: 58px;
-                font-size: 11px;
-            }
-            #action-buttons {
-                gap: 8px;
-                bottom: 60px;
-                right: 15px;
-            }
-            #menu-container .title {
-                font-size: 22px;
-            }
-            #score-display {
-                font-size: 20px;
-                padding: 2px 12px;
-            }
-            .btn {
-                font-size: 11px;
-                padding: 8px 10px;
-            }
-            .lobby-item {
-                flex-wrap: wrap;
-                gap: 8px;
-            }
-            .lobby-item .join-btn {
-                width: 100%;
-                text-align: center;
-            }
-        }
-        @media(max-width:400px) {
-            #joystick-area {
-                width: 90px;
-                height: 90px;
-                bottom: 50px;
-                left: 10px;
-            }
-            #joystick-base {
-                width: 90px;
-                height: 90px;
-            }
-            #joystick-thumb {
-                width: 38px;
-                height: 38px;
-            }
-            .action-btn {
-                width: 50px;
-                height: 50px;
-                font-size: 10px;
-            }
-            #action-buttons {
-                gap: 6px;
-                bottom: 50px;
-                right: 10px;
-            }
-            #score-display {
-                font-size: 16px;
-                padding: 2px 10px;
-            }
-            #timer-display {
-                font-size: 13px;
-                padding: 2px 8px;
-            }
-            .btn {
-                font-size: 10px;
-                padding: 6px 8px;
-            }
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; touch-action: none; user-select: none; -webkit-touch-callout: none; }
+        body { background: #0d1b2a; overflow: hidden; font-family: Arial, sans-serif; position: fixed; width: 100%; height: 100%; color: white; }
+        canvas { display: block; width: 100vw; height: 100vh; background: #1b4332; }
+        #ui-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10; }
+        .btn { pointer-events: auto; background: rgba(60,60,80,0.85); border: 2px solid rgba(255,255,255,0.2); color: white; font-size: 14px; font-weight: bold; padding: 10px 16px; border-radius: 10px; cursor: pointer; text-shadow: 0 2px 4px rgba(0,0,0,0.5); box-shadow: 0 4px 15px rgba(0,0,0,0.3); transition: all 0.2s; touch-action: manipulation; width: 100%; text-align: center; }
+        .btn:active { transform: scale(0.95); }
+        .btn-blue { background: rgba(50,100,255,0.7); border-color: #4d7aff; }
+        .btn-red { background: rgba(200,50,50,0.7); border-color: #ff6b6b; }
+        .btn-green { background: rgba(0,200,100,0.7); border-color: #51cf66; }
+        .btn-gray { background: rgba(100,100,120,0.7); border-color: rgba(255,255,255,0.2); }
+        .btn-orange { background: rgba(255,150,50,0.7); border-color: #ffa94d; }
+        #menu-container { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; pointer-events: none; width: 94%; max-width: 440px; max-height: 95vh; overflow-y: auto; }
+        #menu-container .title { color: white; font-size: 28px; font-weight: bold; text-shadow: 0 0 30px rgba(0,0,0,0.8); margin-bottom: 6px; }
+        #menu-container .subtitle { color: rgba(255,255,255,0.6); font-size: 12px; margin-bottom: 10px; }
+        .btn-full { margin: 4px 0; padding: 10px; font-size: 14px; }
+        #score-display { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); color: white; font-size: 24px; font-weight: bold; text-shadow: 0 0 20px rgba(0,0,0,0.8); background: rgba(0,0,0,0.6); padding: 3px 16px; border-radius: 10px; pointer-events: none; z-index: 20; display: none; }
+        #timer-display { position: absolute; top: 10px; right: 10px; color: white; font-size: 16px; font-weight: bold; text-shadow: 0 0 20px rgba(0,0,0,0.8); background: rgba(0,0,0,0.5); padding: 3px 10px; border-radius: 8px; pointer-events: none; z-index: 20; display: none; }
+        #statusBar { position: absolute; top: 52px; left: 10px; color: rgba(255,255,255,0.6); font-size: 10px; pointer-events: none; z-index: 10; background: rgba(0,0,0,0.4); padding: 2px 8px; border-radius: 6px; display: none; }
+        #ratingDisplay { position: absolute; top: 52px; right: 10px; color: #ffd700; font-size: 12px; font-weight: bold; pointer-events: none; z-index: 10; background: rgba(0,0,0,0.4); padding: 2px 8px; border-radius: 6px; display: none; }
+        #online-status { position: absolute; top: 52px; left: 50%; transform: translateX(-50%); color: #51cf66; font-size: 11px; font-weight: bold; pointer-events: none; z-index: 10; background: rgba(0,0,0,0.5); padding: 2px 12px; border-radius: 6px; display: none; }
+        #joystick-area { position: absolute; bottom: 80px; left: 20px; width: 130px; height: 130px; pointer-events: auto; z-index: 30; display: none; touch-action: none; }
+        #joystick-base { position: absolute; width: 130px; height: 130px; border-radius: 50%; background: rgba(255,255,255,0.12); border: 3px solid rgba(255,255,255,0.2); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); box-shadow: 0 0 40px rgba(0,0,0,0.3); }
+        #joystick-thumb { position: absolute; width: 55px; height: 55px; border-radius: 50%; background: radial-gradient(circle at 40% 35%, rgba(255,255,255,0.6), rgba(200,200,200,0.3)); border: 2px solid rgba(255,255,255,0.3); left: 50%; top: 50%; transform: translate(-50%, -50%); box-shadow: 0 0 30px rgba(255,255,255,0.1); transition: none; pointer-events: none; }
+        #joystick-center-dot { position: absolute; width: 8px; height: 8px; border-radius: 50%; background: rgba(255,255,255,0.2); left: 50%; top: 50%; transform: translate(-50%, -50%); pointer-events: none; }
+        #action-buttons { position: absolute; bottom: 80px; right: 20px; display: none; flex-direction: column; gap: 10px; pointer-events: none; z-index: 30; }
+        .action-btn { pointer-events: auto; width: 70px; height: 70px; border-radius: 50%; border: 3px solid rgba(255,255,255,0.3); color: white; font-size: 13px; font-weight: bold; display: flex; align-items: center; justify-content: center; text-shadow: 0 2px 8px rgba(0,0,0,0.5); touch-action: manipulation; backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); box-shadow: 0 4px 20px rgba(0,0,0,0.3); }
+        .action-btn:active { transform: scale(0.92); }
+        .btn-shoot { background: radial-gradient(circle at 40% 35%, rgba(255,80,80,0.8), rgba(200,30,30,0.6)); border-color: rgba(255,100,100,0.5); }
+        .btn-pass { background: radial-gradient(circle at 40% 35%, rgba(80,255,80,0.8), rgba(30,200,30,0.6)); border-color: rgba(100,255,100,0.5); }
+        .btn-tackle { background: radial-gradient(circle at 40% 35%, rgba(80,80,255,0.8), rgba(30,30,200,0.6)); border-color: rgba(100,100,255,0.5); }
+        #message { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: white; font-size: 26px; font-weight: bold; text-shadow: 0 0 30px rgba(0,0,0,0.9); background: rgba(0,0,0,0.8); padding: 14px 28px; border-radius: 14px; pointer-events: none; z-index: 40; display: none; text-align: center; max-width: 90%; }
+        #lobby-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); z-index: 95; display: none; align-items: center; justify-content: center; padding: 20px; }
+        #lobby-container { background: rgba(13,27,42,0.95); border-radius: 20px; padding: 20px; width: 100%; max-width: 460px; max-height: 90vh; overflow-y: auto; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 0 60px rgba(0,0,0,0.5); }
+        #lobby-container h2 { color: #ffd700; text-align: center; margin-bottom: 8px; font-size: 20px; }
+        .lobby-info { text-align: center; font-size: 14px; color: rgba(255,255,255,0.6); margin-bottom: 12px; }
+        .lobby-players { background: rgba(255,255,255,0.03); border-radius: 10px; padding: 10px; margin-bottom: 12px; }
+        .lobby-player { padding: 6px 10px; margin: 3px 0; border-radius: 6px; background: rgba(255,255,255,0.05); display: flex; justify-content: space-between; align-items: center; }
+        .lobby-player .host-badge { color: #ffd700; font-size: 11px; }
+        .lobby-player .ready-badge { color: #51cf66; font-size: 11px; }
+        .lobby-player .waiting-badge { color: rgba(255,255,255,0.3); font-size: 11px; }
+        #create-lobby-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); z-index: 92; display: none; align-items: center; justify-content: center; padding: 20px; }
+        #create-lobby-container { background: rgba(13,27,42,0.95); border-radius: 20px; padding: 20px; width: 100%; max-width: 460px; max-height: 90vh; overflow-y: auto; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 0 60px rgba(0,0,0,0.5); }
+        #create-lobby-container h2 { color: #ffd700; text-align: center; margin-bottom: 12px; font-size: 20px; }
+        #create-lobby-container input { width: 100%; padding: 10px; margin: 5px 0; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.06); color: white; font-size: 14px; pointer-events: auto; outline: none; }
+        #create-lobby-container input::placeholder { color: rgba(255,255,255,0.25); }
+        #create-lobby-container input:focus { border-color: #ffd700; }
+        .mode-select { display: flex; gap: 10px; margin: 10px 0; }
+        .mode-select .btn { flex: 1; padding: 8px; font-size: 13px; }
+        .mode-select .btn.active { background: rgba(255,215,0,0.3) !important; border-color: #ffd700 !important; }
+        #find-lobby-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); z-index: 93; display: none; align-items: center; justify-content: center; padding: 20px; }
+        #find-lobby-container { background: rgba(13,27,42,0.95); border-radius: 20px; padding: 20px; width: 100%; max-width: 460px; max-height: 90vh; overflow-y: auto; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 0 60px rgba(0,0,0,0.5); }
+        #find-lobby-container h2 { color: #4d7aff; text-align: center; margin-bottom: 12px; font-size: 20px; }
+        .lobby-item { background: rgba(255,255,255,0.05); border-radius: 10px; padding: 12px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; border: 1px solid rgba(255,255,255,0.05); }
+        .lobby-item .lobby-info-text { display: flex; flex-direction: column; align-items: flex-start; }
+        .lobby-item .lobby-name { font-weight: bold; font-size: 14px; }
+        .lobby-item .lobby-desc { font-size: 11px; color: rgba(255,255,255,0.4); }
+        .lobby-item .join-btn { background: rgba(81,207,102,0.2); border: 1px solid rgba(81,207,102,0.3); border-radius: 8px; padding: 6px 16px; color: #51cf66; font-weight: bold; font-size: 12px; cursor: pointer; transition: all 0.2s; pointer-events: auto !important; z-index: 100; }
+        .lobby-item .join-btn:active { transform: scale(0.95); background: rgba(81,207,102,0.4); }
+        .refresh-btn { margin-bottom: 10px; }
+        #online-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); z-index: 90; display: none; align-items: center; justify-content: center; padding: 20px; }
+        #online-container { background: rgba(13,27,42,0.95); border-radius: 20px; padding: 20px; width: 100%; max-width: 460px; max-height: 90vh; overflow-y: auto; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 0 60px rgba(0,0,0,0.5); }
+        #online-container h2 { color: #4d7aff; text-align: center; margin-bottom: 8px; font-size: 22px; }
+        .online-status-text { text-align: center; font-size: 14px; color: rgba(255,255,255,0.5); margin-bottom: 12px; min-height: 24px; }
+        .online-btn { margin: 4px 0; }
+        .close-online { margin-top: 12px; }
+        #login-container { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(13,27,42,0.95); border-radius: 16px; padding: 20px; width: 92%; max-width: 380px; z-index: 60; pointer-events: auto; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); display: none; border: 1px solid rgba(255,255,255,0.1); }
+        #login-container h2 { color: white; text-align: center; margin-bottom: 10px; font-size: 18px; }
+        #login-container input { width: 100%; padding: 10px; margin: 5px 0; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.06); color: white; font-size: 14px; pointer-events: auto; outline: none; }
+        #login-container input::placeholder { color: rgba(255,255,255,0.25); }
+        #login-container input:focus { border-color: #ffd700; }
+        #login-container .btn { margin: 3px 0; }
+        #loginMsg { text-align: center; margin-top: 6px; font-size: 12px; min-height: 18px; }
+        .login-success { color: #51cf66 !important; }
+        .login-error { color: #ff6b6b !important; }
+        @media(max-width:600px) { #joystick-area { width: 110px; height: 110px; bottom: 60px; left: 15px; } #joystick-base { width: 110px; height: 110px; } #joystick-thumb { width: 45px; height: 45px; } .action-btn { width: 58px; height: 58px; font-size: 11px; } #action-buttons { gap: 8px; bottom: 60px; right: 15px; } #menu-container .title { font-size: 22px; } #score-display { font-size: 20px; padding: 2px 12px; } .btn { font-size: 11px; padding: 8px 10px; } .lobby-item { flex-wrap: wrap; gap: 8px; } .lobby-item .join-btn { width: 100%; text-align: center; } }
+        @media(max-width:400px) { #joystick-area { width: 90px; height: 90px; bottom: 50px; left: 10px; } #joystick-base { width: 90px; height: 90px; } #joystick-thumb { width: 38px; height: 38px; } .action-btn { width: 50px; height: 50px; font-size: 10px; } #action-buttons { gap: 6px; bottom: 50px; right: 10px; } #score-display { font-size: 16px; padding: 2px 10px; } #timer-display { font-size: 13px; padding: 2px 8px; } .btn { font-size: 10px; padding: 6px 8px; } }
     </style>
 </head>
 <body>
-
     <canvas id="gameCanvas"></canvas>
-
     <div id="ui-overlay">
         <div id="score-display">0 : 0</div>
         <div id="timer-display">⏱️ 5:00</div>
@@ -677,18 +177,11 @@
         // ==================== ВСЯ ИГРА ===============================
         // ============================================================
 
-        // ---- КОНСТАНТЫ ----
-        const FIELD_W = 1200,
-            FIELD_H = 700;
-        const PLAYER_RADIUS = 18;
-        const BALL_RADIUS = 10;
-        const GOAL_WIDTH = 30;
-        const GOAL_HEIGHT = 180;
-        const MATCH_TIME = 300;
-        const PLAYER_SPEED = 2.2;
-        const BOT_SPEED_BASE = 1.8;
+        const FIELD_W = 1200, FIELD_H = 700;
+        const PLAYER_RADIUS = 18, BALL_RADIUS = 10;
+        const GOAL_WIDTH = 30, GOAL_HEIGHT = 180;
+        const MATCH_TIME = 300, PLAYER_SPEED = 2.2, BOT_SPEED_BASE = 1.8;
 
-        // ---- ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ----
         let canvas, ctx;
         let gameState = 'menu';
         let mode = '2x2';
@@ -697,7 +190,7 @@
         let playerCrystals = 100;
         let lobbyMode = '1x1';
 
-        // ---- ОНЛАЙН ----
+        // ---- ОНЛАЙН (ЛОКАЛЬНОЕ ХРАНЕНИЕ) ----
         let currentLobby = null;
         let isInLobby = false;
         let isHost = false;
@@ -705,7 +198,35 @@
         let opponentName = '';
         let syncInterval = null;
 
-        // ---- API ----
+        // ---- СОХРАНЕНИЕ ЛОББИ В LOCALSTORAGE ----
+        function getLobbies() {
+            try {
+                return JSON.parse(localStorage.getItem('online_lobbies') || '{}');
+            } catch(e) { return {}; }
+        }
+
+        function saveLobbies(lobbies) {
+            localStorage.setItem('online_lobbies', JSON.stringify(lobbies));
+        }
+
+        function getLobby(lobbyId) {
+            const lobbies = getLobbies();
+            return lobbies[lobbyId] || null;
+        }
+
+        function saveLobby(lobbyId, data) {
+            const lobbies = getLobbies();
+            lobbies[lobbyId] = data;
+            saveLobbies(lobbies);
+        }
+
+        function deleteLobby(lobbyId) {
+            const lobbies = getLobbies();
+            delete lobbies[lobbyId];
+            saveLobbies(lobbies);
+        }
+
+        // ---- API (ДЛЯ СИНХРОНИЗАЦИИ) ----
         const SERVER_URL = 'https://machcup-mobile-server.onrender.com';
 
         async function apiCall(endpoint, data) {
@@ -716,8 +237,8 @@
                     body: JSON.stringify(data)
                 });
                 return await res.json();
-            } catch (e) {
-                return { error: 'Ошибка соединения с сервером' };
+            } catch(e) {
+                return { error: 'Ошибка соединения' };
             }
         }
 
@@ -725,38 +246,37 @@
             try {
                 const res = await fetch(SERVER_URL + endpoint);
                 return await res.json();
-            } catch (e) {
-                return { error: 'Ошибка соединения с сервером' };
+            } catch(e) {
+                return { error: 'Ошибка соединения' };
             }
         }
 
-        // ---- СОХРАНЕНИЕ ----
+        // ---- СОХРАНЕНИЕ ИГРОКА ----
         function loadSave() {
             try {
                 const data = localStorage.getItem('football_save');
-                if (data) {
+                if(data) {
                     const save = JSON.parse(data);
                     playerName = save.name || '';
                     playerRating = save.rating || 50;
                     playerCrystals = save.crystals || 100;
                 }
-            } catch (e) { console.log('Ошибка загрузки', e); }
+            } catch(e) {}
         }
 
         function saveGame() {
             try {
-                const data = {
+                localStorage.setItem('football_save', JSON.stringify({
                     name: playerName,
                     rating: playerRating,
                     crystals: playerCrystals
-                };
-                localStorage.setItem('football_save', JSON.stringify(data));
-            } catch (e) { console.log('Ошибка сохранения', e); }
+                }));
+            } catch(e) {}
         }
 
         function updateUI() {
             const info = document.getElementById('playerInfo');
-            if (playerName) {
+            if(playerName) {
                 info.textContent = '👤 ' + playerName + ' | ⭐ ' + playerRating + ' | 💎 ' + playerCrystals;
                 document.getElementById('guestMenu').style.display = 'none';
             } else {
@@ -768,10 +288,7 @@
 
         // ---- UI ----
         function showOnlineUI() {
-            if (!playerName) {
-                showMessage('❌ Сначала войдите в аккаунт!');
-                return;
-            }
+            if(!playerName) { showMessage('❌ Сначала войдите в аккаунт!'); return; }
             document.getElementById('online-overlay').style.display = 'flex';
         }
 
@@ -820,27 +337,33 @@
             document.getElementById('lobby-overlay').style.display = 'none';
         }
 
-        // ---- СОЗДАНИЕ ЛОББИ ----
-        async function createLobby() {
+        // ---- СОЗДАНИЕ ЛОББИ (LOCALSTORAGE) ----
+        function createLobby() {
             const lobbyName = document.getElementById('lobbyNameInput').value.trim() || 'Лобби ' + playerName;
+            if(!playerName) { showMessage('❌ Сначала войдите в аккаунт!'); return; }
 
-            if (!playerName) {
-                showMessage('❌ Сначала войдите в аккаунт!');
-                return;
-            }
-
-            const result = await apiCall('/api/lobby/create', {
+            const lobbyId = 'lobby_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
+            const lobbyData = {
+                id: lobbyId,
                 name: lobbyName,
                 host: playerName,
-                mode: lobbyMode
-            });
+                mode: lobbyMode,
+                players: [playerName],
+                status: 'waiting',
+                created: Date.now()
+            };
 
-            if (result.error) {
-                showMessage('❌ ' + result.error);
-                return;
-            }
+            saveLobby(lobbyId, lobbyData);
 
-            currentLobby = result.lobby_id;
+            // Отправляем на сервер для синхронизации
+            apiCall('/api/lobby/create', {
+                name: lobbyName,
+                host: playerName,
+                mode: lobbyMode,
+                lobby_id: lobbyId
+            }).catch(() => {});
+
+            currentLobby = lobbyId;
             isInLobby = true;
             isHost = true;
 
@@ -852,53 +375,85 @@
         }
 
         // ---- ПОИСК ЛОББИ ----
-        async function findLobbies() {
+        function findLobbies() {
             const list = document.getElementById('lobby-list');
-            if (!list) return;
+            if(!list) return;
 
-            const result = await apiGet('/api/lobby/list');
+            // Сначала проверяем локальные
+            const localLobbies = getLobbies();
+            const available = Object.values(localLobbies).filter(l =>
+                l.status === 'waiting' &&
+                l.players.length < 2 &&
+                l.host !== playerName
+            );
 
-            if (result.error) {
-                list.innerHTML = '<div style="text-align:center;color:rgba(255,255,255,0.3);padding:20px;">Ошибка загрузки</div>';
-                return;
-            }
-
-            if (result.length === 0) {
-                list.innerHTML = '<div style="text-align:center;color:rgba(255,255,255,0.3);padding:20px;">Нет доступных лобби</div>';
-                return;
-            }
-
-            let html = '';
-            result.forEach(lobby => {
-                const isFull = lobby.players.length >= 2;
-                html += `
-                    <div class="lobby-item">
-                        <div class="lobby-info-text">
-                            <div class="lobby-name">${lobby.name}</div>
-                            <div class="lobby-desc">👤 ${lobby.host} | ${lobby.mode} | ${lobby.players.length}/2 игроков</div>
-                        </div>
-                        ${!isFull && lobby.host !== playerName ? 
-                            `<button class="join-btn" onclick="joinLobby('${lobby.id}')">🔗 Присоединиться</button>` : 
-                            `<span style="color:rgba(255,255,255,0.2);font-size:12px;">${isFull ? '🟢 Полно' : '❌ Ваше лобби'}</span>`
+            // Пытаемся получить с сервера
+            apiGet('/api/lobby/list').then(result => {
+                if(!result.error && result.length > 0) {
+                    // Сохраняем полученные с сервера лобби локально
+                    const lobbies = getLobbies();
+                    result.forEach(l => {
+                        if(!lobbies[l.id]) {
+                            lobbies[l.id] = l;
                         }
-                    </div>
-                `;
+                    });
+                    saveLobbies(lobbies);
+                }
+                renderLobbyList();
+            }).catch(() => {
+                renderLobbyList();
             });
 
-            list.innerHTML = html;
+            function renderLobbyList() {
+                const lobbies = getLobbies();
+                const available = Object.values(lobbies).filter(l =>
+                    l.status === 'waiting' &&
+                    l.players.length < 2 &&
+                    l.host !== playerName
+                );
+
+                if(available.length === 0) {
+                    list.innerHTML = '<div style="text-align:center;color:rgba(255,255,255,0.3);padding:20px;">Нет доступных лобби</div>';
+                    return;
+                }
+
+                let html = '';
+                available.forEach(lobby => {
+                    const isFull = lobby.players.length >= 2;
+                    html += `
+                        <div class="lobby-item">
+                            <div class="lobby-info-text">
+                                <div class="lobby-name">${lobby.name}</div>
+                                <div class="lobby-desc">👤 ${lobby.host} | ${lobby.mode} | ${lobby.players.length}/2 игроков</div>
+                            </div>
+                            ${!isFull && lobby.host !== playerName ? 
+                                `<button class="join-btn" onclick="joinLobby('${lobby.id}')">🔗 Присоединиться</button>` : 
+                                `<span style="color:rgba(255,255,255,0.2);font-size:12px;">${isFull ? '🟢 Полно' : '❌ Ваше лобби'}</span>`
+                            }
+                        </div>
+                    `;
+                });
+                list.innerHTML = html;
+            }
         }
 
         // ---- ПРИСОЕДИНЕНИЕ ----
-        async function joinLobby(lobbyId) {
-            const result = await apiCall('/api/lobby/join', {
+        function joinLobby(lobbyId) {
+            const lobby = getLobby(lobbyId);
+            if(!lobby) { showMessage('❌ Лобби не найдено!'); return; }
+            if(lobby.players.length >= 2) { showMessage('❌ Лобби заполнено!'); return; }
+            if(lobby.status === 'playing') { showMessage('❌ Матч уже идёт!'); return; }
+            if(lobby.players.includes(playerName)) { showMessage('❌ Вы уже в лобби!'); return; }
+
+            // Добавляем игрока
+            lobby.players.push(playerName);
+            saveLobby(lobbyId, lobby);
+
+            // Отправляем на сервер
+            apiCall('/api/lobby/join', {
                 lobby_id: lobbyId,
                 player: playerName
-            });
-
-            if (result.error) {
-                showMessage('❌ ' + result.error);
-                return;
-            }
+            }).catch(() => {});
 
             currentLobby = lobbyId;
             isInLobby = true;
@@ -913,34 +468,50 @@
 
         // ---- СИНХРОНИЗАЦИЯ ----
         function startLobbySync() {
-            if (syncInterval) clearInterval(syncInterval);
-            syncInterval = setInterval(async () => {
-                if (!currentLobby || !isInLobby) {
+            if(syncInterval) clearInterval(syncInterval);
+            syncInterval = setInterval(() => {
+                if(!currentLobby || !isInLobby) {
                     clearInterval(syncInterval);
                     syncInterval = null;
                     return;
                 }
-                await updateLobbyUI();
+                // Проверяем обновления с сервера
+                apiGet('/api/lobby/list').then(result => {
+                    if(!result.error && result.length > 0) {
+                        const lobbies = getLobbies();
+                        result.forEach(l => {
+                            lobbies[l.id] = l;
+                        });
+                        saveLobbies(lobbies);
+                    }
+                    updateLobbyUI();
+                }).catch(() => {
+                    updateLobbyUI();
+                });
             }, 1500);
         }
 
         // ---- ВЫХОД ----
-        async function leaveLobby() {
-            if (!currentLobby) return;
+        function leaveLobby() {
+            if(!currentLobby) return;
+            if(syncInterval) { clearInterval(syncInterval); syncInterval = null; }
 
-            if (syncInterval) {
-                clearInterval(syncInterval);
-                syncInterval = null;
-            }
-
-            const result = await apiCall('/api/lobby/leave', {
-                lobby_id: currentLobby,
-                player: playerName
-            });
-
-            if (result.error) {
-                showMessage('❌ ' + result.error);
-                return;
+            const lobby = getLobby(currentLobby);
+            if(lobby) {
+                lobby.players = lobby.players.filter(p => p !== playerName);
+                if(lobby.players.length === 0) {
+                    deleteLobby(currentLobby);
+                } else {
+                    if(lobby.host === playerName && lobby.players.length > 0) {
+                        lobby.host = lobby.players[0];
+                    }
+                    saveLobby(currentLobby, lobby);
+                }
+                // Отправляем на сервер
+                apiCall('/api/lobby/leave', {
+                    lobby_id: currentLobby,
+                    player: playerName
+                }).catch(() => {});
             }
 
             currentLobby = null;
@@ -953,20 +524,13 @@
         }
 
         // ---- ОБНОВЛЕНИЕ ЛОББИ ----
-        async function updateLobbyUI() {
-            if (!currentLobby) return;
-
-            const result = await apiGet('/api/lobby/list');
-            if (result.error) return;
-
-            const lobby = result.find(l => l.id === currentLobby);
-            if (!lobby) {
+        function updateLobbyUI() {
+            if(!currentLobby) return;
+            const lobby = getLobby(currentLobby);
+            if(!lobby) {
                 closeLobbyUI();
                 showMessage('❌ Лобби было удалено');
-                if (syncInterval) {
-                    clearInterval(syncInterval);
-                    syncInterval = null;
-                }
+                if(syncInterval) { clearInterval(syncInterval); syncInterval = null; }
                 return;
             }
 
@@ -988,7 +552,7 @@
             });
 
             const emptySlots = 2 - lobby.players.length;
-            for (let i = 0; i < emptySlots; i++) {
+            for(let i=0; i<emptySlots; i++) {
                 playersHtml += `
                     <div class="lobby-player">
                         <span style="color:rgba(255,255,255,0.2);">🔲 Свободно</span>
@@ -996,18 +560,17 @@
                     </div>
                 `;
             }
-
             document.getElementById('lobby-players-list').innerHTML = playersHtml;
 
             const statusText = document.getElementById('lobby-status-text');
             const startBtn = document.getElementById('lobby-start-btn');
 
-            if (lobby.status === 'playing') {
+            if(lobby.status === 'playing') {
                 statusText.textContent = '⚽ Матч идёт...';
                 startBtn.style.display = 'none';
-            } else if (lobby.players.length >= 2) {
+            } else if(lobby.players.length >= 2) {
                 statusText.textContent = '✅ Все игроки готовы!';
-                if (isHost) {
+                if(isHost) {
                     startBtn.style.display = 'block';
                     startBtn.textContent = '▶️ НАЧАТЬ МАТЧ';
                 } else {
@@ -1021,37 +584,33 @@
         }
 
         // ---- НАЧАЛО МАТЧА ----
-        async function startOnlineMatch() {
-            if (!currentLobby || !isHost) {
+        function startOnlineMatch() {
+            if(!currentLobby || !isHost) {
                 showMessage('❌ Только хост может начать матч!');
                 return;
             }
 
-            const result = await apiCall('/api/lobby/start', {
-                lobby_id: currentLobby
-            });
-
-            if (result.error) {
-                showMessage('❌ ' + result.error);
+            const lobby = getLobby(currentLobby);
+            if(!lobby || lobby.players.length < 2) {
+                showMessage('❌ Нужно минимум 2 игрока!');
                 return;
             }
 
-            const lobby = result.lobby;
+            lobby.status = 'playing';
+            saveLobby(currentLobby, lobby);
+
+            apiCall('/api/lobby/start', { lobby_id: currentLobby }).catch(() => {});
+
             const opponent = lobby.players.find(p => p !== playerName);
             opponentName = opponent || 'Соперник';
 
-            if (syncInterval) {
-                clearInterval(syncInterval);
-                syncInterval = null;
-            }
+            if(syncInterval) { clearInterval(syncInterval); syncInterval = null; }
 
             closeLobbyUI();
             showMessage('⚽ Матч начинается! Противник: ' + opponentName);
             isOnline = true;
 
-            setTimeout(() => {
-                startGame('online');
-            }, 500);
+            setTimeout(() => { startGame('online'); }, 500);
         }
 
         // ============================================================
@@ -1059,16 +618,10 @@
         // ============================================================
 
         let ball, players, goalkeepers;
-        let homeScore = 0,
-            awayScore = 0;
-        let gameTime = 0;
-        let matchFinished = false;
-        let goalCooldown = 0;
-        let isPassing = false;
-        let passTarget = null;
-        let passTimer = 0;
-        let isShooting = false;
-        let shootTimer = 0;
+        let homeScore = 0, awayScore = 0, gameTime = 0;
+        let matchFinished = false, goalCooldown = 0;
+        let isPassing = false, passTarget = null, passTimer = 0;
+        let isShooting = false, shootTimer = 0;
         let keys = { up: false, down: false, left: false, right: false };
 
         window.onload = function() {
@@ -1099,21 +652,13 @@
                 const cx = rect.left + rect.width / 2;
                 const cy = rect.top + rect.height / 2;
                 const maxDist = rect.width / 2 - 30;
-
-                let dx = clientX - cx;
-                let dy = clientY - cy;
-                const dist = Math.sqrt(dx * dx + dy * dy);
-
-                if (dist > maxDist) {
-                    dx = (dx / dist) * maxDist;
-                    dy = (dy / dist) * maxDist;
-                }
-
-                thumb.style.left = (rect.width / 2 + dx - 27.5) + 'px';
-                thumb.style.top = (rect.height / 2 + dy - 27.5) + 'px';
-
-                joystickDX = dx / maxDist;
-                joystickDY = dy / maxDist;
+                let dx = clientX - cx, dy = clientY - cy;
+                const dist = Math.sqrt(dx*dx + dy*dy);
+                if(dist > maxDist) { dx = (dx/dist)*maxDist; dy = (dy/dist)*maxDist; }
+                thumb.style.left = (rect.width/2 + dx - 27.5) + 'px';
+                thumb.style.top = (rect.height/2 + dy - 27.5) + 'px';
+                joystickDX = dx/maxDist;
+                joystickDY = dy/maxDist;
                 joystickActive = dist > 10;
             };
 
@@ -1121,27 +666,25 @@
                 thumb.style.left = '50%';
                 thumb.style.top = '50%';
                 thumb.style.transform = 'translate(-50%, -50%)';
-                joystickDX = 0;
-                joystickDY = 0;
+                joystickDX = 0; joystickDY = 0;
                 joystickActive = false;
                 joystickTouchId = null;
-                keys.up = false;
-                keys.down = false;
-                keys.left = false;
-                keys.right = false;
+                keys.up = false; keys.down = false; keys.left = false; keys.right = false;
             };
 
-            area.addEventListener('touchstart', (e) => {
+            let joystickTouchId = null, joystickDX = 0, joystickDY = 0, joystickActive = false;
+
+            area.addEventListener('touchstart', e => {
                 e.preventDefault();
                 const touch = e.changedTouches[0];
                 joystickTouchId = touch.identifier;
                 handleMove(touch.clientX, touch.clientY);
             }, { passive: false });
 
-            area.addEventListener('touchmove', (e) => {
+            area.addEventListener('touchmove', e => {
                 e.preventDefault();
-                for (let touch of e.changedTouches) {
-                    if (touch.identifier === joystickTouchId) {
+                for(let touch of e.changedTouches) {
+                    if(touch.identifier === joystickTouchId) {
                         handleMove(touch.clientX, touch.clientY);
                         const deadZone = 0.15;
                         keys.up = joystickDY < -deadZone;
@@ -1152,23 +695,18 @@
                 }
             }, { passive: false });
 
-            area.addEventListener('touchend', (e) => {
-                for (let touch of e.changedTouches) {
-                    if (touch.identifier === joystickTouchId) {
-                        handleEnd();
-                    }
+            area.addEventListener('touchend', e => {
+                for(let touch of e.changedTouches) {
+                    if(touch.identifier === joystickTouchId) { handleEnd(); }
                 }
             }, { passive: false });
 
             area.addEventListener('touchcancel', handleEnd, { passive: false });
 
             let mouseDown = false;
-            area.addEventListener('mousedown', (e) => {
-                mouseDown = true;
-                handleMove(e.clientX, e.clientY);
-            });
-            document.addEventListener('mousemove', (e) => {
-                if (mouseDown) {
+            area.addEventListener('mousedown', e => { mouseDown = true; handleMove(e.clientX, e.clientY); });
+            document.addEventListener('mousemove', e => {
+                if(mouseDown) {
                     handleMove(e.clientX, e.clientY);
                     const deadZone = 0.15;
                     keys.up = joystickDY < -deadZone;
@@ -1177,57 +715,47 @@
                     keys.right = joystickDX > deadZone;
                 }
             });
-            document.addEventListener('mouseup', () => {
-                if (mouseDown) {
-                    mouseDown = false;
-                    handleEnd();
-                }
-            });
+            document.addEventListener('mouseup', () => { if(mouseDown) { mouseDown = false; handleEnd(); } });
         }
 
         function setupActionButtons() {
-            document.getElementById('btn-shoot').addEventListener('touchstart', (e) => { e.preventDefault();
-                handleShoot(); });
+            document.getElementById('btn-shoot').addEventListener('touchstart', e => { e.preventDefault(); handleShoot(); });
             document.getElementById('btn-shoot').addEventListener('mousedown', handleShoot);
-            document.getElementById('btn-pass').addEventListener('touchstart', (e) => { e.preventDefault();
-                handlePass(); });
+            document.getElementById('btn-pass').addEventListener('touchstart', e => { e.preventDefault(); handlePass(); });
             document.getElementById('btn-pass').addEventListener('mousedown', handlePass);
-            document.getElementById('btn-tackle').addEventListener('touchstart', (e) => { e.preventDefault();
-                handleTackle(); });
+            document.getElementById('btn-tackle').addEventListener('touchstart', e => { e.preventDefault(); handleTackle(); });
             document.getElementById('btn-tackle').addEventListener('mousedown', handleTackle);
         }
 
         function setupKeyboard() {
-            document.addEventListener('keydown', (e) => {
-                if (gameState === 'playing') {
-                    if (e.key === 'w' || e.key === 'ArrowUp') keys.up = true;
-                    if (e.key === 's' || e.key === 'ArrowDown') keys.down = true;
-                    if (e.key === 'a' || e.key === 'ArrowLeft') keys.left = true;
-                    if (e.key === 'd' || e.key === 'ArrowRight') keys.right = true;
-                    if (e.key === ' ') { e.preventDefault();
-                        handleShoot(); }
-                    if (e.key === 'e') handlePass();
-                    if (e.key === 'q') handleTackle();
+            document.addEventListener('keydown', e => {
+                if(gameState === 'playing') {
+                    if(e.key === 'w' || e.key === 'ArrowUp') keys.up = true;
+                    if(e.key === 's' || e.key === 'ArrowDown') keys.down = true;
+                    if(e.key === 'a' || e.key === 'ArrowLeft') keys.left = true;
+                    if(e.key === 'd' || e.key === 'ArrowRight') keys.right = true;
+                    if(e.key === ' ') { e.preventDefault(); handleShoot(); }
+                    if(e.key === 'e') handlePass();
+                    if(e.key === 'q') handleTackle();
                 }
-                if (e.key === 'Escape') {
-                    if (document.getElementById('lobby-overlay').style.display === 'flex') leaveLobby();
-                    if (document.getElementById('online-overlay').style.display === 'flex') closeOnlineUI();
-                    if (document.getElementById('create-lobby-overlay').style.display === 'flex') closeCreateLobbyUI();
-                    if (document.getElementById('find-lobby-overlay').style.display === 'flex') closeFindLobbyUI();
+                if(e.key === 'Escape') {
+                    if(document.getElementById('lobby-overlay').style.display === 'flex') leaveLobby();
+                    if(document.getElementById('online-overlay').style.display === 'flex') closeOnlineUI();
+                    if(document.getElementById('create-lobby-overlay').style.display === 'flex') closeCreateLobbyUI();
+                    if(document.getElementById('find-lobby-overlay').style.display === 'flex') closeFindLobbyUI();
                 }
             });
-            document.addEventListener('keyup', (e) => {
-                if (e.key === 'w' || e.key === 'ArrowUp') keys.up = false;
-                if (e.key === 's' || e.key === 'ArrowDown') keys.down = false;
-                if (e.key === 'a' || e.key === 'ArrowLeft') keys.left = false;
-                if (e.key === 'd' || e.key === 'ArrowRight') keys.right = false;
+            document.addEventListener('keyup', e => {
+                if(e.key === 'w' || e.key === 'ArrowUp') keys.up = false;
+                if(e.key === 's' || e.key === 'ArrowDown') keys.down = false;
+                if(e.key === 'a' || e.key === 'ArrowLeft') keys.left = false;
+                if(e.key === 'd' || e.key === 'ArrowRight') keys.right = false;
             });
         }
 
         function startGame(type) {
             isOnline = type === 'online';
             gameState = 'playing';
-
             document.getElementById('menu-container').style.display = 'none';
             document.getElementById('joystick-area').style.display = 'block';
             document.getElementById('action-buttons').style.display = 'flex';
@@ -1235,20 +763,13 @@
             document.getElementById('timer-display').style.display = 'block';
             document.getElementById('statusBar').style.display = 'block';
             document.getElementById('ratingDisplay').style.display = 'block';
-
-            if (isOnline) {
+            if(isOnline) {
                 document.getElementById('online-status').style.display = 'block';
                 document.getElementById('online-status').textContent = '🌐 Онлайн: ' + (opponentName || 'Соперник');
                 document.getElementById('statusBar').textContent = '⚽ Онлайн матч!';
             }
-
-            homeScore = 0;
-            awayScore = 0;
-            gameTime = 0;
-            matchFinished = false;
-            goalCooldown = 0;
+            homeScore = 0; awayScore = 0; gameTime = 0; matchFinished = false; goalCooldown = 0;
             document.getElementById('score-display').textContent = '0 : 0';
-
             initMatch();
         }
 
@@ -1258,7 +779,7 @@
             goalkeepers = [];
 
             let homeTeam, awayTeam;
-            if (mode === '2x2') {
+            if(mode === '2x2') {
                 homeTeam = [
                     { name: playerName, x: 250, y: 290, color: '#00b4d8' },
                     { name: 'Тимейт', x: 250, y: 410, color: '#0077b6' }
@@ -1282,40 +803,10 @@
 
             let id = 0;
             homeTeam.forEach(p => {
-                players.push({
-                    ...p,
-                    id: id++,
-                    radius: PLAYER_RADIUS,
-                    vx: 0,
-                    vy: 0,
-                    hasBall: false,
-                    isPlayer: id === 1,
-                    team: 'home',
-                    lastX: p.x,
-                    lastY: p.y,
-                    stuckTimer: 0,
-                    passCooldown: 0,
-                    role: 'field',
-                    canGetBall: true
-                });
+                players.push({ ...p, id: id++, radius: PLAYER_RADIUS, vx: 0, vy: 0, hasBall: false, isPlayer: id === 1, team: 'home', lastX: p.x, lastY: p.y, stuckTimer: 0, passCooldown: 0, role: 'field', canGetBall: true });
             });
             awayTeam.forEach(p => {
-                players.push({
-                    ...p,
-                    id: id++,
-                    radius: PLAYER_RADIUS,
-                    vx: 0,
-                    vy: 0,
-                    hasBall: false,
-                    isPlayer: false,
-                    team: 'away',
-                    lastX: p.x,
-                    lastY: p.y,
-                    stuckTimer: 0,
-                    passCooldown: 0,
-                    role: 'field',
-                    canGetBall: true
-                });
+                players.push({ ...p, id: id++, radius: PLAYER_RADIUS, vx: 0, vy: 0, hasBall: false, isPlayer: false, team: 'away', lastX: p.x, lastY: p.y, stuckTimer: 0, passCooldown: 0, role: 'field', canGetBall: true });
             });
 
             goalkeepers = [
@@ -1325,105 +816,71 @@
 
             players[0].hasBall = true;
             players.forEach(p => {
-                if (p.team === 'home') {
-                    const roles = ['defender', 'midfielder', 'forward'];
-                    p.role = roles[p.id % 3];
-                } else {
-                    const roles = ['forward', 'midfielder', 'defender'];
-                    p.role = roles[p.id % 3];
-                }
+                if(p.team === 'home') { const roles = ['defender','midfielder','forward']; p.role = roles[p.id % 3]; }
+                else { const roles = ['forward','midfielder','defender']; p.role = roles[p.id % 3]; }
             });
         }
 
-        function gameLoop() {
-            update();
-            render();
-            requestAnimationFrame(gameLoop);
-        }
+        function gameLoop() { update(); render(); requestAnimationFrame(gameLoop); }
 
         function update() {
-            if (gameState !== 'playing' || matchFinished) return;
+            if(gameState !== 'playing' || matchFinished) return;
 
-            gameTime += 1 / 60;
+            gameTime += 1/60;
             const remaining = Math.max(0, MATCH_TIME - gameTime);
             const mins = Math.floor(remaining / 60);
             const secs = Math.floor(remaining % 60);
             document.getElementById('timer-display').textContent = '⏱️ ' + mins + ':' + String(secs).padStart(2, '0');
 
-            if (remaining <= 0 || homeScore >= 5 || awayScore >= 5) {
-                endMatch();
-                return;
-            }
+            if(remaining <= 0 || homeScore >= 5 || awayScore >= 5) { endMatch(); return; }
 
-            ball.x += ball.vx;
-            ball.y += ball.vy;
-            ball.vx *= 0.98;
-            ball.vy *= 0.98;
-            if (Math.abs(ball.vx) < 0.02) ball.vx = 0;
-            if (Math.abs(ball.vy) < 0.02) ball.vy = 0;
+            ball.x += ball.vx; ball.y += ball.vy;
+            ball.vx *= 0.98; ball.vy *= 0.98;
+            if(Math.abs(ball.vx) < 0.02) ball.vx = 0;
+            if(Math.abs(ball.vy) < 0.02) ball.vy = 0;
 
             const margin = 40;
-            if (ball.x < margin + BALL_RADIUS) { ball.x = margin + BALL_RADIUS;
-                ball.vx = Math.abs(ball.vx) * 0.3; }
-            if (ball.x > FIELD_W - margin - BALL_RADIUS) { ball.x = FIELD_W - margin - BALL_RADIUS;
-                ball.vx = -Math.abs(ball.vx) * 0.3; }
-            if (ball.y < margin + BALL_RADIUS) { ball.y = margin + BALL_RADIUS;
-                ball.vy = Math.abs(ball.vy) * 0.3; }
-            if (ball.y > FIELD_H - margin - BALL_RADIUS) { ball.y = FIELD_H - margin - BALL_RADIUS;
-                ball.vy = -Math.abs(ball.vy) * 0.3; }
+            if(ball.x < margin + BALL_RADIUS) { ball.x = margin + BALL_RADIUS; ball.vx = Math.abs(ball.vx) * 0.3; }
+            if(ball.x > FIELD_W - margin - BALL_RADIUS) { ball.x = FIELD_W - margin - BALL_RADIUS; ball.vx = -Math.abs(ball.vx) * 0.3; }
+            if(ball.y < margin + BALL_RADIUS) { ball.y = margin + BALL_RADIUS; ball.vy = Math.abs(ball.vy) * 0.3; }
+            if(ball.y > FIELD_H - margin - BALL_RADIUS) { ball.y = FIELD_H - margin - BALL_RADIUS; ball.vy = -Math.abs(ball.vy) * 0.3; }
 
             checkGoals();
 
-            if (isPassing) {
+            if(isPassing) {
                 passTimer++;
-                if (passTarget && Math.hypot(ball.x - passTarget.x, ball.y - passTarget.y) < 30) {
+                if(passTarget && Math.hypot(ball.x - passTarget.x, ball.y - passTarget.y) < 30) {
                     players.forEach(p2 => p2.hasBall = false);
                     passTarget.hasBall = true;
-                    isPassing = false;
-                    passTarget = null;
-                    passTimer = 0;
+                    isPassing = false; passTarget = null; passTimer = 0;
                 }
-                if (passTimer > 120 || Math.abs(ball.vx) < 0.1 && Math.abs(ball.vy) < 0.1) {
-                    isPassing = false;
-                    passTarget = null;
-                    passTimer = 0;
+                if(passTimer > 120 || (Math.abs(ball.vx) < 0.1 && Math.abs(ball.vy) < 0.1)) {
+                    isPassing = false; passTarget = null; passTimer = 0;
                 }
             }
 
-            if (isShooting) {
-                shootTimer++;
-                if (shootTimer > 30) {
-                    isShooting = false;
-                    shootTimer = 0;
-                }
-            }
+            if(isShooting) { shootTimer++; if(shootTimer > 30) { isShooting = false; shootTimer = 0; } }
+
+            const diff = { speed: 0.6, accuracy: 0.6, aggression: 0.5 };
 
             players.forEach((p) => {
-                if (p.isPlayer) {
-                    let dx = 0,
-                        dy = 0;
-                    if (keys.up) dy = -PLAYER_SPEED;
-                    if (keys.down) dy = PLAYER_SPEED;
-                    if (keys.left) dx = -PLAYER_SPEED;
-                    if (keys.right) dx = PLAYER_SPEED;
-                    if (dx && dy) { dx *= 0.707;
-                        dy *= 0.707; }
-                    p.x += dx;
-                    p.y += dy;
+                if(p.isPlayer) {
+                    let dx = 0, dy = 0;
+                    if(keys.up) dy = -PLAYER_SPEED;
+                    if(keys.down) dy = PLAYER_SPEED;
+                    if(keys.left) dx = -PLAYER_SPEED;
+                    if(keys.right) dx = PLAYER_SPEED;
+                    if(dx && dy) { dx *= 0.707; dy *= 0.707; }
+                    p.x += dx; p.y += dy;
                     p.x = Math.max(40, Math.min(FIELD_W - 40, p.x));
                     p.y = Math.max(40, Math.min(FIELD_H - 40, p.y));
-                    if (p.hasBall && !isPassing && !isShooting) {
-                        ball.x = p.x + 22;
-                        ball.y = p.y;
-                        ball.vx = 0;
-                        ball.vy = 0;
+                    if(p.hasBall && !isPassing && !isShooting) {
+                        ball.x = p.x + 22; ball.y = p.y; ball.vx = 0; ball.vy = 0;
                     }
                 } else {
-                    if (!isOnline) {
-                        updateBot(p);
-                    }
+                    if(!isOnline) { updateBot(p, diff); }
                 }
-                if (p.passCooldown > 0) p.passCooldown--;
+                if(p.passCooldown > 0) p.passCooldown--;
             });
 
             goalkeepers.forEach(gk => {
@@ -1431,18 +888,14 @@
                 const targetY = 350 + (ball.y - 350) * 0.15;
                 gk.x += (targetX - gk.x) * 0.04;
                 gk.y += (targetY - gk.y) * 0.04;
-                gk.x = Math.max(gk.team === 'home' ? 25 : 1150 - 25, Math.min(gk.team === 'home' ? 100 : 1175, gk
-                .x));
+                gk.x = Math.max(gk.team === 'home' ? 25 : 1150 - 25, Math.min(gk.team === 'home' ? 100 : 1175, gk.x));
                 gk.y = Math.max(270, Math.min(430, gk.y));
-
-                if (Math.hypot(gk.x - ball.x, gk.y - ball.y) < gk.radius + BALL_RADIUS + 5) {
+                if(Math.hypot(gk.x - ball.x, gk.y - ball.y) < gk.radius + BALL_RADIUS + 5) {
                     const distToGoal = gk.team === 'home' ? ball.x : FIELD_W - ball.x;
-                    if (distToGoal < 200 && Math.abs(ball.vx) < 4) {
-                        ball.vx *= -0.2;
-                        ball.vy *= -0.2;
-                        if (Math.abs(ball.vx) < 0.5) {
-                            const ang = gk.team === 'home' ? -0.2 + Math.random() * 0.4 : Math.PI - 0.2 + Math
-                            .random() * 0.4;
+                    if(distToGoal < 200 && Math.abs(ball.vx) < 4) {
+                        ball.vx *= -0.2; ball.vy *= -0.2;
+                        if(Math.abs(ball.vx) < 0.5) {
+                            const ang = gk.team === 'home' ? -0.2 + Math.random() * 0.4 : Math.PI - 0.2 + Math.random() * 0.4;
                             ball.vx = (gk.team === 'home' ? 1 : -1) * (1.5 + Math.random() * 2);
                             ball.vy = (Math.random() - 0.5) * 2;
                             players.forEach(p => p.hasBall = false);
@@ -1451,165 +904,124 @@
                 }
             });
 
-            if (!isPassing && !isShooting) {
+            if(!isPassing && !isShooting) {
                 players.forEach(p => {
-                    if (!p.hasBall && p.canGetBall) {
+                    if(!p.hasBall && p.canGetBall) {
                         const dist = Math.hypot(p.x - ball.x, p.y - ball.y);
-                        if (dist < p.radius + BALL_RADIUS + 2) {
+                        if(dist < p.radius + BALL_RADIUS + 2) {
                             const ang = Math.atan2(ball.y - p.y, ball.x - p.x);
                             const power = 0.4 + Math.random() * 0.4;
                             ball.vx = power * Math.cos(ang);
                             ball.vy = power * Math.sin(ang);
                             players.forEach(p2 => p2.hasBall = false);
                             p.hasBall = true;
-                            if (!p.isPlayer && !isOnline) {
-                                setTimeout(() => botAction(p), 400 + Math.random() * 300);
+                            if(!p.isPlayer && !isOnline) {
+                                setTimeout(() => botAction(p, diff), 400 + Math.random() * 300);
                             }
                         }
                     }
                 });
             }
 
-            if (goalCooldown > 0) goalCooldown--;
+            if(goalCooldown > 0) goalCooldown--;
         }
 
-        function updateBot(p) {
-            const diff = { speed: 0.6, accuracy: 0.6, aggression: 0.5 };
+        function updateBot(p, diff) {
             const isHome = p.team === 'home';
             const role = p.role || 'midfielder';
+            let targetX = 600, targetY = 350;
 
-            let targetX = 600,
-                targetY = 350;
-
-            if (p.hasBall) {
-                if (isPassing) return;
+            if(p.hasBall) {
+                if(isPassing) return;
                 targetX = isHome ? FIELD_W - 120 : 120;
                 targetY = 350 + (Math.random() - 0.5) * 60;
-
-                const nearbyEnemy = players.some(p2 =>
-                    p2.team !== p.team && Math.hypot(p.x - p2.x, p.y - p2.y) < 70
-                );
-                if (nearbyEnemy && Math.random() < 0.35 * diff.accuracy && p.passCooldown === 0 && !isPassing) {
-                    botAction(p);
-                    return;
+                const nearbyEnemy = players.some(p2 => p2.team !== p.team && Math.hypot(p.x - p2.x, p.y - p2.y) < 70);
+                if(nearbyEnemy && Math.random() < 0.35 * diff.accuracy && p.passCooldown === 0 && !isPassing) {
+                    botAction(p, diff); return;
                 }
-
                 const distToGoal = isHome ? FIELD_W - p.x : p.x;
-                if (distToGoal < 200 && Math.random() < 0.2 * diff.accuracy && !isPassing) {
-                    botAction(p);
-                    return;
+                if(distToGoal < 200 && Math.random() < 0.2 * diff.accuracy && !isPassing) {
+                    botAction(p, diff); return;
                 }
-
-                const dx = targetX - p.x;
-                const dy = targetY - p.y;
+                const dx = targetX - p.x, dy = targetY - p.y;
                 const dist = Math.hypot(dx, dy);
-                if (dist > 3) {
+                if(dist > 3) {
                     const speed = BOT_SPEED_BASE * (0.4 + diff.speed * 0.6);
                     const step = Math.min(speed, dist);
-                    p.x += (dx / dist) * step;
-                    p.y += (dy / dist) * step;
-                    if (!isPassing && !isShooting) {
-                        ball.x = p.x + 22;
-                        ball.y = p.y;
-                        ball.vx = 0;
-                        ball.vy = 0;
-                    }
+                    p.x += (dx/dist) * step; p.y += (dy/dist) * step;
+                    if(!isPassing && !isShooting) { ball.x = p.x + 22; ball.y = p.y; ball.vx = 0; ball.vy = 0; }
                 }
             } else {
-                if (role === 'defender') {
+                if(role === 'defender') {
                     targetX = isHome ? 180 + Math.random() * 60 : 1020 - Math.random() * 60;
                     targetY = 350 + (Math.random() - 0.5) * 100;
-                } else if (role === 'midfielder') {
+                } else if(role === 'midfielder') {
                     targetX = isHome ? 350 + Math.random() * 150 : 850 - Math.random() * 150;
                     targetY = 350 + (Math.random() - 0.5) * 120;
                 } else {
                     targetX = isHome ? 950 + Math.random() * 60 : 250 - Math.random() * 60;
                     targetY = 350 + (Math.random() - 0.5) * 100;
                 }
-
                 const distToBall = Math.hypot(p.x - ball.x, p.y - ball.y);
-                if (distToBall < 140 && !players.some(p2 => p2.team === p.team && p2.hasBall) && !isPassing && !isShooting) {
+                if(distToBall < 140 && !players.some(p2 => p2.team === p.team && p2.hasBall) && !isPassing && !isShooting) {
                     targetX = ball.x + (isHome ? 15 : -15);
                     targetY = ball.y;
                 }
-
                 players.forEach(p2 => {
-                    if (p2.team !== p.team && p2.hasBall && Math.hypot(p.x - p2.x, p.y - p2.y) < 40 && !isPassing &&
-                        !isShooting) {
-                        if (Math.random() < diff.aggression * 0.25) {
+                    if(p2.team !== p.team && p2.hasBall && Math.hypot(p.x - p2.x, p.y - p2.y) < 40 && !isPassing && !isShooting) {
+                        if(Math.random() < diff.aggression * 0.25) {
                             const ang = Math.atan2(p2.y - p.y, p2.x - p.x);
                             ball.vx = 1.2 * Math.cos(ang + (Math.random() - 0.5) * 0.5);
                             ball.vy = 1.2 * Math.sin(ang + (Math.random() - 0.5) * 0.5);
-                            p2.hasBall = false;
-                            p.hasBall = true;
+                            p2.hasBall = false; p.hasBall = true;
                         }
                     }
                 });
-
-                const dx = targetX - p.x;
-                const dy = targetY - p.y;
+                const dx = targetX - p.x, dy = targetY - p.y;
                 const dist = Math.hypot(dx, dy);
-                if (dist > 3) {
+                if(dist > 3) {
                     const speed = BOT_SPEED_BASE * (0.4 + diff.speed * 0.6) * 0.8;
                     const step = Math.min(speed, dist);
-                    p.x += (dx / dist) * step;
-                    p.y += (dy / dist) * step;
+                    p.x += (dx/dist) * step; p.y += (dy/dist) * step;
                 }
             }
 
-            if (Math.abs(p.x - p.lastX) < 0.3 && Math.abs(p.y - p.lastY) < 0.3) {
+            if(Math.abs(p.x - p.lastX) < 0.3 && Math.abs(p.y - p.lastY) < 0.3) {
                 p.stuckTimer++;
-                if (p.stuckTimer > 50) {
-                    targetX += (Math.random() - 0.5) * 80;
-                    targetY += (Math.random() - 0.5) * 80;
-                    p.stuckTimer = 0;
-                }
-            } else {
-                p.stuckTimer = Math.max(0, p.stuckTimer - 2);
-            }
-            p.lastX = p.x;
-            p.lastY = p.y;
-
+                if(p.stuckTimer > 50) { targetX += (Math.random() - 0.5) * 80; targetY += (Math.random() - 0.5) * 80; p.stuckTimer = 0; }
+            } else { p.stuckTimer = Math.max(0, p.stuckTimer - 2); }
+            p.lastX = p.x; p.lastY = p.y;
             p.x = Math.max(45, Math.min(FIELD_W - 45, p.x));
             p.y = Math.max(45, Math.min(FIELD_H - 45, p.y));
         }
 
-        function botAction(p) {
-            if (!p.hasBall || matchFinished || p.passCooldown > 0 || isPassing || isShooting) return;
-
+        function botAction(p, diff) {
+            if(!p.hasBall || matchFinished || p.passCooldown > 0 || isPassing || isShooting) return;
             const isHome = p.team === 'home';
             const r = Math.random();
 
-            if (r < 0.45) {
+            if(r < 0.45) {
                 const teammates = players.filter(p2 => p2.team === p.team && p2.id !== p.id);
-                if (teammates.length > 0) {
-                    let best = null;
-                    let bestScore = -999;
+                if(teammates.length > 0) {
+                    let best = null, bestScore = -999;
                     teammates.forEach(tm => {
-                        const distToEnemy = Math.min(...players.filter(p2 => p2.team !== p.team)
-                            .map(p2 => Math.hypot(tm.x - p2.x, tm.y - p2.y)));
+                        const distToEnemy = Math.min(...players.filter(p2 => p2.team !== p.team).map(p2 => Math.hypot(tm.x - p2.x, tm.y - p2.y)));
                         const score = -Math.hypot(tm.x - p.x, tm.y - p.y) * 0.3 + distToEnemy * 0.5;
-                        if (score > bestScore) { bestScore = score;
-                            best = tm; }
+                        if(score > bestScore) { bestScore = score; best = tm; }
                     });
-                    if (best && Math.hypot(best.x - p.x, best.y - p.y) < 400) {
-                        isPassing = true;
-                        passTarget = best;
-                        passTimer = 0;
+                    if(best && Math.hypot(best.x - p.x, best.y - p.y) < 400) {
+                        isPassing = true; passTarget = best; passTimer = 0;
                         const dist = Math.hypot(best.x - p.x, best.y - p.y);
                         const power = Math.min(6, Math.max(1.5, dist / 40));
                         const ang = Math.atan2(best.y - p.y, best.x - p.x);
                         ball.vx = power * Math.cos(ang + (Math.random() - 0.5) * 0.06);
                         ball.vy = power * Math.sin(ang + (Math.random() - 0.5) * 0.06);
-                        p.hasBall = false;
-                        p.passCooldown = 15;
+                        p.hasBall = false; p.passCooldown = 15;
                         setTimeout(() => {
-                            if (isPassing && passTarget) {
+                            if(isPassing && passTarget) {
                                 players.forEach(p2 => p2.hasBall = false);
                                 passTarget.hasBall = true;
-                                isPassing = false;
-                                passTarget = null;
-                                passTimer = 0;
+                                isPassing = false; passTarget = null; passTimer = 0;
                             }
                         }, 700);
                         return;
@@ -1617,16 +1029,14 @@
                 }
             }
 
-            if (r < 0.75) {
+            if(r < 0.75) {
                 const goalX = isHome ? FIELD_W - 50 : 50;
                 const goalY = 350 + (Math.random() - 0.5) * 60;
                 const ang = Math.atan2(goalY - p.y, goalX - p.x);
                 const power = 4 + Math.random() * 3;
                 ball.vx = power * Math.cos(ang + (Math.random() - 0.5) * 0.12);
                 ball.vy = power * Math.sin(ang + (Math.random() - 0.5) * 0.12);
-                p.hasBall = false;
-                isShooting = true;
-                shootTimer = 0;
+                p.hasBall = false; isShooting = true; shootTimer = 0;
                 return;
             }
 
@@ -1637,7 +1047,7 @@
             ball.vy = 1.2 * Math.sin(ang);
             p.hasBall = false;
             setTimeout(() => {
-                if (!isPassing && !isShooting) {
+                if(!isPassing && !isShooting) {
                     players.forEach(p2 => p2.hasBall = false);
                     p.hasBall = true;
                 }
@@ -1645,59 +1055,51 @@
         }
 
         function checkGoals() {
-            if (goalCooldown > 0) return;
-
-            if (ball.x < 35 && ball.y > 350 - GOAL_HEIGHT / 2 && ball.y < 350 + GOAL_HEIGHT / 2) {
-                if (ball.vx < -0.2) {
-                    awayScore++;
-                    goalCooldown = 80;
+            if(goalCooldown > 0) return;
+            if(ball.x < 35 && ball.y > 350 - GOAL_HEIGHT/2 && ball.y < 350 + GOAL_HEIGHT/2) {
+                if(ball.vx < -0.2) {
+                    awayScore++; goalCooldown = 80;
                     document.getElementById('score-display').textContent = homeScore + ' : ' + awayScore;
                     showMessage('⚽ ГОЛ! Команда Б забила!');
-                    if (awayScore >= 5) endMatch();
+                    if(awayScore >= 5) endMatch();
                     else resetBall();
                 }
             }
-            if (ball.x > FIELD_W - 35 && ball.y > 350 - GOAL_HEIGHT / 2 && ball.y < 350 + GOAL_HEIGHT / 2) {
-                if (ball.vx > 0.2) {
-                    homeScore++;
-                    goalCooldown = 80;
+            if(ball.x > FIELD_W - 35 && ball.y > 350 - GOAL_HEIGHT/2 && ball.y < 350 + GOAL_HEIGHT/2) {
+                if(ball.vx > 0.2) {
+                    homeScore++; goalCooldown = 80;
                     document.getElementById('score-display').textContent = homeScore + ' : ' + awayScore;
                     showMessage('⚽ ГОЛ! Команда А забила!');
-                    if (homeScore >= 5) endMatch();
+                    if(homeScore >= 5) endMatch();
                     else resetBall();
                 }
             }
         }
 
         function resetBall() {
-            ball.x = 600;
-            ball.y = 350;
+            ball.x = 600; ball.y = 350;
             ball.vx = (Math.random() - 0.5) * 0.8;
             ball.vy = (Math.random() - 0.5) * 0.8;
             players.forEach(p => p.hasBall = false);
             players[0].hasBall = true;
-            isPassing = false;
-            passTarget = null;
-            isShooting = false;
-            passTimer = 0;
-            shootTimer = 0;
+            isPassing = false; passTarget = null; isShooting = false;
+            passTimer = 0; shootTimer = 0;
         }
 
         function endMatch() {
-            if (matchFinished) return;
+            if(matchFinished) return;
             matchFinished = true;
             const isWin = homeScore > awayScore;
 
-            if (playerName && !isOnline) {
-                if (isWin) {
+            if(playerName && !isOnline) {
+                if(isWin) {
                     playerCrystals += 30 + homeScore * 5;
                     showMessage('🏆 ПОБЕДА!');
                 } else {
                     playerCrystals += 10;
                     showMessage('💔 ПОРАЖЕНИЕ');
                 }
-                saveGame();
-                updateUI();
+                saveGame(); updateUI();
             }
 
             document.getElementById('statusBar').textContent = '🏁 ' + (isWin ? 'Победа!' : 'Поражение');
@@ -1718,38 +1120,30 @@
 
         function handleShoot() {
             const p = players.find(p => p.isPlayer);
-            if (!p || !p.hasBall || matchFinished || isPassing || isShooting) return;
-
+            if(!p || !p.hasBall || matchFinished || isPassing || isShooting) return;
             const isHome = p.team === 'home';
             const goalX = isHome ? FIELD_W - 50 : 50;
             const goalY = 350 + (Math.random() - 0.5) * 60;
             const ang = Math.atan2(goalY - p.y, goalX - p.x);
             const power = 4 + Math.random() * 3;
-
             ball.vx = power * Math.cos(ang + (Math.random() - 0.5) * 0.12);
             ball.vy = power * Math.sin(ang + (Math.random() - 0.5) * 0.12);
-            p.hasBall = false;
-            isShooting = true;
-            shootTimer = 0;
+            p.hasBall = false; isShooting = true; shootTimer = 0;
         }
 
         function handlePass() {
             const p = players.find(p => p.isPlayer);
-            if (!p || !p.hasBall || matchFinished || isPassing || isShooting) return;
+            if(!p || !p.hasBall || matchFinished || isPassing || isShooting) return;
             const teammates = players.filter(p2 => p2.team === p.team && p2.id !== p.id);
-            if (teammates.length > 0) {
-                let best = null;
-                let bestScore = -999;
+            if(teammates.length > 0) {
+                let best = null, bestScore = -999;
                 teammates.forEach(tm => {
                     const dist = Math.hypot(tm.x - p.x, tm.y - p.y);
                     const score = -dist + Math.random() * 20;
-                    if (score > bestScore) { bestScore = score;
-                        best = tm; }
+                    if(score > bestScore) { bestScore = score; best = tm; }
                 });
-                if (best && Math.hypot(best.x - p.x, best.y - p.y) < 400) {
-                    isPassing = true;
-                    passTarget = best;
-                    passTimer = 0;
+                if(best && Math.hypot(best.x - p.x, best.y - p.y) < 400) {
+                    isPassing = true; passTarget = best; passTimer = 0;
                     const dist = Math.hypot(best.x - p.x, best.y - p.y);
                     const power = Math.min(6, Math.max(1.5, dist / 40));
                     const ang = Math.atan2(best.y - p.y, best.x - p.x);
@@ -1757,12 +1151,10 @@
                     ball.vy = power * Math.sin(ang + (Math.random() - 0.5) * 0.06);
                     p.hasBall = false;
                     setTimeout(() => {
-                        if (isPassing && passTarget) {
+                        if(isPassing && passTarget) {
                             players.forEach(p2 => p2.hasBall = false);
                             passTarget.hasBall = true;
-                            isPassing = false;
-                            passTarget = null;
-                            passTimer = 0;
+                            isPassing = false; passTarget = null; passTimer = 0;
                         }
                     }, 600);
                 }
@@ -1771,34 +1163,29 @@
 
         function handleTackle() {
             const p = players.find(p => p.isPlayer);
-            if (!p || matchFinished || isPassing || isShooting) return;
+            if(!p || matchFinished || isPassing || isShooting) return;
             players.forEach(p2 => {
-                if (p2.team !== p.team && p2.hasBall && Math.hypot(p.x - p2.x, p.y - p2.y) < 40) {
+                if(p2.team !== p.team && p2.hasBall && Math.hypot(p.x - p2.x, p.y - p2.y) < 40) {
                     const ang = Math.atan2(p2.y - p.y, p2.x - p.x);
                     ball.vx = 1.5 * Math.cos(ang + (Math.random() - 0.5) * 0.4);
                     ball.vy = 1.5 * Math.sin(ang + (Math.random() - 0.5) * 0.4);
-                    p2.hasBall = false;
-                    p.hasBall = true;
+                    p2.hasBall = false; p.hasBall = true;
                 }
             });
         }
 
         function render() {
-            const w = canvas.width,
-                h = canvas.height;
+            const w = canvas.width, h = canvas.height;
             ctx.clearRect(0, 0, w, h);
-
             const scale = Math.min(w / FIELD_W, h / FIELD_H);
             const ox = (w - FIELD_W * scale) / 2;
             const oy = (h - FIELD_H * scale) / 2;
-
             ctx.save();
             ctx.translate(ox, oy);
             ctx.scale(scale, scale);
 
             ctx.fillStyle = '#1b4332';
             ctx.fillRect(0, 0, FIELD_W, FIELD_H);
-
             ctx.strokeStyle = 'rgba(255,255,255,0.08)';
             ctx.lineWidth = 2;
             ctx.strokeRect(40, 40, FIELD_W - 80, FIELD_H - 80);
@@ -1809,12 +1196,10 @@
             ctx.moveTo(FIELD_W / 2, 40);
             ctx.lineTo(FIELD_W / 2, FIELD_H - 40);
             ctx.stroke();
-
             ctx.strokeRect(40, FIELD_H / 2 - 100, 120, 200);
             ctx.strokeRect(FIELD_W - 160, FIELD_H / 2 - 100, 120, 200);
             ctx.strokeRect(40, FIELD_H / 2 - 60, 60, 120);
             ctx.strokeRect(FIELD_W - 100, FIELD_H / 2 - 60, 60, 120);
-
             ctx.fillStyle = 'rgba(255,255,255,0.04)';
             ctx.fillRect(25, FIELD_H / 2 - GOAL_HEIGHT / 2, GOAL_WIDTH, GOAL_HEIGHT);
             ctx.fillRect(FIELD_W - 25 - GOAL_WIDTH, FIELD_H / 2 - GOAL_HEIGHT / 2, GOAL_WIDTH, GOAL_HEIGHT);
@@ -1859,7 +1244,7 @@
                 ctx.shadowBlur = 6;
                 ctx.beginPath();
                 ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
-                if (p.isPlayer) {
+                if(p.isPlayer) {
                     const grad = ctx.createRadialGradient(p.x - 5, p.y - 5, 3, p.x, p.y, p.radius);
                     grad.addColorStop(0, '#ffd700');
                     grad.addColorStop(1, '#e6a800');
@@ -1872,13 +1257,11 @@
                 ctx.lineWidth = 1.5;
                 ctx.stroke();
                 ctx.shadowBlur = 0;
-
                 ctx.fillStyle = 'white';
                 ctx.font = 'bold 9px Arial';
                 ctx.textAlign = 'center';
                 ctx.fillText(p.name, p.x, p.y - p.radius - 10);
-
-                if (p.hasBall) {
+                if(p.hasBall) {
                     ctx.shadowColor = 'rgba(255,215,0,0.3)';
                     ctx.shadowBlur = 12;
                     ctx.fillStyle = '#ffd700';
@@ -1887,8 +1270,7 @@
                     ctx.fill();
                     ctx.shadowBlur = 0;
                 }
-
-                if (p.isPlayer) {
+                if(p.isPlayer) {
                     ctx.shadowColor = '#ffd700';
                     ctx.shadowBlur = 15;
                     ctx.beginPath();
@@ -1902,7 +1284,7 @@
 
             ctx.restore();
 
-            if (gameState === 'playing') {
+            if(gameState === 'playing') {
                 ctx.fillStyle = 'rgba(0,0,0,0.5)';
                 ctx.fillRect(w / 2 - 45, 6, 90, 28);
                 ctx.fillStyle = 'white';
@@ -1945,25 +1327,21 @@
             const pass = document.getElementById('loginPass').value.trim();
             const msg = document.getElementById('loginMsg');
 
-            if (!name || !pass) { msg.textContent = '❌ Заполните все поля!';
-                msg.className = 'login-error'; return; }
+            if(!name || !pass) { msg.textContent = '❌ Заполните все поля!'; msg.className = 'login-error'; return; }
 
             const users = JSON.parse(localStorage.getItem('football_users') || '{}');
             const title = document.getElementById('loginTitle').textContent;
             const isRegister = title.includes('Регистрация');
 
-            if (isRegister) {
-                if (users[name]) { msg.textContent = '❌ Игрок уже существует!';
-                    msg.className = 'login-error'; return; }
+            if(isRegister) {
+                if(users[name]) { msg.textContent = '❌ Игрок уже существует!'; msg.className = 'login-error'; return; }
                 users[name] = { password: pass, rating: 50, crystals: 100 };
                 localStorage.setItem('football_users', JSON.stringify(users));
                 msg.textContent = '✅ Регистрация успешна!';
                 msg.className = 'login-success';
             } else {
-                if (!users[name]) { msg.textContent = '❌ Игрок не найден!';
-                    msg.className = 'login-error'; return; }
-                if (users[name].password !== pass) { msg.textContent = '❌ Неверный пароль!';
-                    msg.className = 'login-error'; return; }
+                if(!users[name]) { msg.textContent = '❌ Игрок не найден!'; msg.className = 'login-error'; return; }
+                if(users[name].password !== pass) { msg.textContent = '❌ Неверный пароль!'; msg.className = 'login-error'; return; }
                 msg.textContent = '✅ Вход выполнен!';
                 msg.className = 'login-success';
             }
@@ -1981,9 +1359,9 @@
             }, 800);
         }
 
-        console.log('⚽ STREET FOOTBALL ONLINE v14.0 загружена!');
+        console.log('⚽ STREET FOOTBALL ONLINE v15.0 загружена!');
         console.log('👤 Игрок:', playerName || 'Гость');
-        console.log('🌐 Онлайн: лобби и матчи работают!');
+        console.log('🌐 Лобби сохраняются в localStorage!');
     </script>
 </body>
 </html>
