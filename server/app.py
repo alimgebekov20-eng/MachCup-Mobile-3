@@ -40,11 +40,11 @@ GOAL_H = 180
 PLAYER_SPEED = 3.5
 
 # ============================================================
-# ==================== КЛАСС МАТЧА ===========================
+# ==================== КЛАСС МАТЧА (БЕЗ БОТОВ!) ==============
 # ============================================================
 
 class Match:
-    def __init__(self, match_id, players_list, mode='2x2'):
+    def __init__(self, match_id, players_list, mode='1x1'):
         self.id = match_id
         self.mode = mode
         self.players = {}
@@ -55,13 +55,22 @@ class Match:
         self.goal_cooldown = 0
         self.last_update = time.time()
         
-        # Инициализация игроков (ТОЛЬКО РЕАЛЬНЫЕ!)
+        # Инициализация игроков (ТОЛЬКО РЕАЛЬНЫЕ ИГРОКИ!)
         self.init_players(players_list)
     
     def init_players(self, players_list):
         """ТОЛЬКО РЕАЛЬНЫЕ ИГРОКИ, БЕЗ БОТОВ!"""
-        home_positions = [(250, 290), (250, 410)]
-        away_positions = [(950, 290), (950, 410)]
+        # Позиции для 1x1
+        home_positions = [(250, 350)]
+        away_positions = [(950, 350)]
+        
+        # Если 2x2 или 3x3 - расширяем
+        if len(players_list) > 2:
+            home_positions = [(250, 290), (250, 410)]
+            away_positions = [(950, 290), (950, 410)]
+        if len(players_list) > 4:
+            home_positions = [(220, 250), (220, 350), (220, 450)]
+            away_positions = [(980, 250), (980, 350), (980, 450)]
         
         for i, name in enumerate(players_list):
             if i < len(home_positions):
@@ -94,7 +103,7 @@ class Match:
     # ============================================================
     
     def start_move(self, player_name, direction):
-        """Игрок начал движение (1 запрос)"""
+        """Игрок начал движение"""
         if player_name not in self.players:
             return False
         
@@ -119,7 +128,7 @@ class Match:
         return True
     
     def stop_move(self, player_name):
-        """Игрок остановился (1 запрос)"""
+        """Игрок остановился"""
         if player_name not in self.players:
             return False
         
@@ -140,7 +149,7 @@ class Match:
     # ============================================================
     
     def shoot(self, player_name, target_x, target_y):
-        """Удар по воротам (1 запрос)"""
+        """Удар по воротам"""
         if player_name not in self.players:
             return None
         
@@ -178,7 +187,7 @@ class Match:
     # ============================================================
     
     def tackle(self, player_name):
-        """Отбор мяча (1 запрос)"""
+        """Отбор мяча"""
         if player_name not in self.players:
             return {'success': False}
         
@@ -217,6 +226,7 @@ class Match:
                 player['x'] += player['vx']
                 player['y'] += player['vy']
                 
+                # Границы поля
                 player['x'] = max(40, min(1160, player['x']))
                 player['y'] = max(40, min(660, player['y']))
                 
@@ -238,7 +248,7 @@ class Match:
             if abs(self.ball['vy']) < 0.05:
                 self.ball['vy'] = 0
             
-            # Границы
+            # Границы мяча
             margin = 40
             if self.ball['x'] < margin + BALL_RADIUS:
                 self.ball['x'] = margin + BALL_RADIUS
@@ -267,7 +277,7 @@ class Match:
                 self.score['away'] += 1
                 self.goal_cooldown = 60
                 self.reset_ball()
-                print('⚽ ГОЛ! Команда Б забила!')
+                print(f'⚽ ГОЛ! Команда Б забила! ({self.score["away"]})')
                 return
         
         # Правые ворота (away)
@@ -276,7 +286,7 @@ class Match:
                 self.score['home'] += 1
                 self.goal_cooldown = 60
                 self.reset_ball()
-                print('⚽ ГОЛ! Команда А забила!')
+                print(f'⚽ ГОЛ! Команда А забила! ({self.score["home"]})')
                 return
     
     def reset_ball(self):
@@ -417,6 +427,7 @@ def start_lobby():
         
         lobby['status'] = 'playing'
         
+        # Создаём матч (ТОЛЬКО РЕАЛЬНЫЕ ИГРОКИ!)
         match_id = 'match_' + str(uuid.uuid4())[:8]
         match = Match(match_id, lobby['players'], lobby['mode'])
         matches[match_id] = match
@@ -490,6 +501,10 @@ def get_lobby(lobby_id):
         return jsonify({'error': str(e)}), 500
 
 
+# ============================================================
+# ==================== API МАТЧА ==============================
+# ============================================================
+
 @app.route('/api/match/state/<match_id>', methods=['GET'])
 def get_match_state(match_id):
     try:
@@ -504,7 +519,6 @@ def get_match_state(match_id):
 
 @app.route('/api/match/move', methods=['POST'])
 def match_move():
-    """Начало движения (1 запрос)"""
     try:
         data = request.json
         match_id = data.get('match_id')
@@ -528,7 +542,6 @@ def match_move():
 
 @app.route('/api/match/stop', methods=['POST'])
 def match_stop():
-    """Остановка движения (1 запрос)"""
     try:
         data = request.json
         match_id = data.get('match_id')
@@ -551,7 +564,6 @@ def match_stop():
 
 @app.route('/api/match/shoot', methods=['POST'])
 def match_shoot():
-    """Удар (1 запрос)"""
     try:
         data = request.json
         match_id = data.get('match_id')
@@ -576,7 +588,6 @@ def match_shoot():
 
 @app.route('/api/match/tackle', methods=['POST'])
 def match_tackle():
-    """Отбор (1 запрос)"""
     try:
         data = request.json
         match_id = data.get('match_id')
@@ -599,7 +610,6 @@ def match_tackle():
 
 @app.route('/api/match/leave', methods=['POST'])
 def match_leave():
-    """Выход из матча"""
     try:
         data = request.json
         match_id = data.get('match_id')
