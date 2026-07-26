@@ -5,9 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>⚽ STREET FOOTBALL - ОНЛАЙН</title>
     <style>
-        /* ============================================================
-                   СТИЛИ (полные)
-                   ============================================================ */
         * {
             margin: 0;
             padding: 0;
@@ -771,19 +768,8 @@
 
     <script>
         // ============================================================
-        // ==================== КЛИЕНТ (3000+ СТРОК) ===================
+        // ==================== КЛИЕНТ ОНЛАЙН ==========================
         // ============================================================
-
-        // ---- КОНСТАНТЫ ----
-        const FIELD_W = 1200,
-            FIELD_H = 700;
-        const PLAYER_RADIUS = 18;
-        const BALL_RADIUS = 10;
-        const GOAL_WIDTH = 30;
-        const GOAL_HEIGHT = 180;
-        const MATCH_TIME = 300;
-        const PLAYER_SPEED = 2.2;
-        const BOT_SPEED_BASE = 1.8;
 
         // ---- СЕРВЕР ----
         const SERVER_URL = 'https://machcup-mobile-server.onrender.com';
@@ -804,8 +790,11 @@
         let isOnline = false;
         let opponentName = '';
         let syncInterval = null;
-        let socket = null;
-        let isSubscribed = false;
+        let matchId = null;
+        let matchState = null;
+        let isMatchSubscribed = false;
+        let lastActionTime = 0;
+        let actionQueue = [];
 
         // ---- API ----
         async function apiCall(endpoint, data) {
@@ -831,14 +820,18 @@
         }
 
         // ---- WEBSOCKET ----
+        let socket = null;
+
         function initSocket() {
             try {
                 socket = new WebSocket('wss://' + SERVER_URL.replace('https://', '') + '/socket.io/?EIO=4&transport=websocket');
                 socket.onopen = function() {
                     console.log('🔌 WebSocket подключен');
-                    // Подписываемся если есть лобби
                     if (currentLobby && isInLobby) {
                         subscribeToLobby(currentLobby);
+                    }
+                    if (matchId) {
+                        subscribeToMatch(matchId);
                     }
                 };
                 socket.onmessage = function(event) {
@@ -846,6 +839,8 @@
                         const data = JSON.parse(event.data);
                         if (data.type === 'lobby_update') {
                             handleLobbyUpdate(data);
+                        } else if (data.type === 'match_update') {
+                            handleMatchUpdate(data);
                         }
                     } catch (e) {}
                 };
@@ -867,16 +862,26 @@
                     type: 'subscribe',
                     lobby_id: lobbyId
                 }));
-                isSubscribed = true;
             }
         }
 
-        function unsubscribeFromLobby() {
-            if (socket && socket.readyState === WebSocket.OPEN && isSubscribed) {
+        function subscribeToMatch(matchId) {
+            if (socket && socket.readyState === WebSocket.OPEN) {
                 socket.send(JSON.stringify({
-                    type: 'unsubscribe'
+                    type: 'subscribe_match',
+                    match_id: matchId
                 }));
-                isSubscribed = false;
+                isMatchSubscribed = true;
+            }
+        }
+
+        function unsubscribeFromMatch() {
+            if (socket && socket.readyState === WebSocket.OPEN && isMatchSubscribed) {
+                socket.send(JSON.stringify({
+                    type: 'unsubscribe_match',
+                    match_id: matchId
+                }));
+                isMatchSubscribed = false;
             }
         }
 
@@ -887,7 +892,17 @@
             }
         }
 
-        // ---- СОХРАНЕНИЕ ИГРОКА ----
+        function handleMatchUpdate(data) {
+            const { match_id, state } = data;
+            if (matchId === match_id) {
+                matchState = state;
+                if (gameState === 'playing') {
+                    updateGameFromState(state);
+                }
+            }
+        }
+
+        // ---- СОХРАНЕНИЕ ----
         function loadSave() {
             try {
                 const data = localStorage.getItem('football_save');
@@ -971,12 +986,9 @@
 
         function closeLobbyUI() {
             document.getElementById('lobby-overlay').style.display = 'none';
-            if (isSubscribed) {
-                unsubscribeFromLobby();
-            }
         }
 
-        // ---- СОЗДАНИЕ ЛОББИ ----
+        // ---- ЛОББИ ----
         async function createLobby() {
             const lobbyName = document.getElementById('lobbyNameInput').value.trim() || 'Лобби ' + playerName;
             if (!playerName) { showMessage('❌ Сначала войдите в аккаунт!'); return; }
@@ -999,15 +1011,11 @@
             closeCreateLobbyUI();
             showLobbyUI();
             showMessage('✅ Лобби "' + lobbyName + '" создано!');
-
-            // Подписываемся на обновления
             subscribeToLobby(currentLobby);
-
             updateLobbyUI();
             startLobbySync();
         }
 
-        // ---- ПОИСК ЛОББИ ----
         async function findLobbies() {
             const list = document.getElementById('lobby-list');
             if (!list) return;
@@ -1043,7 +1051,6 @@
             list.innerHTML = html;
         }
 
-        // ---- ПРИСОЕДИНЕНИЕ ----
         async function joinLobby(lobbyId) {
             const result = await apiCall('/api/lobby/join', {
                 lobby_id: lobbyId,
@@ -1062,15 +1069,11 @@
             closeFindLobbyUI();
             showLobbyUI();
             showMessage('✅ Вы присоединились к лобби!');
-
-            // Подписываемся на обновления
             subscribeToLobby(currentLobby);
-
             updateLobbyUI();
             startLobbySync();
         }
 
-        // ---- СИНХРОНИЗАЦИЯ ----
         function startLobbySync() {
             if (syncInterval) clearInterval(syncInterval);
             syncInterval = setInterval(async () => {
@@ -1079,10 +1082,8 @@
                     syncInterval = null;
                     return;
                 }
-                // Получаем актуальные данные с сервера
                 const result = await apiGet('/api/lobby/get/' + currentLobby);
                 if (result.error) {
-                    // Лобби удалено
                     closeLobbyUI();
                     showMessage('❌ Лобби было удалено');
                     if (syncInterval) { clearInterval(syncInterval);
@@ -1093,7 +1094,6 @@
             }, 1500);
         }
 
-        // ---- ВЫХОД ----
         async function leaveLobby() {
             if (!currentLobby) return;
             if (syncInterval) { clearInterval(syncInterval);
@@ -1109,10 +1109,6 @@
                 return;
             }
 
-            if (isSubscribed) {
-                unsubscribeFromLobby();
-            }
-
             currentLobby = null;
             isInLobby = false;
             isHost = false;
@@ -1122,7 +1118,6 @@
             showMessage('🚪 Вы вышли из лобби');
         }
 
-        // ---- ОБНОВЛЕНИЕ ЛОББИ ----
         async function updateLobbyUI() {
             if (!currentLobby) return;
 
@@ -1186,7 +1181,6 @@
             }
         }
 
-        // ---- НАЧАЛО МАТЧА ----
         async function startOnlineMatch() {
             if (!currentLobby || !isHost) {
                 showMessage('❌ Только хост может начать матч!');
@@ -1205,38 +1199,32 @@
             const lobby = result.lobby;
             const opponent = lobby.players.find(p => p !== playerName);
             opponentName = opponent || 'Соперник';
+            matchId = result.match_id;
 
             if (syncInterval) { clearInterval(syncInterval);
                 syncInterval = null; }
-            if (isSubscribed) {
-                unsubscribeFromLobby();
-            }
 
             closeLobbyUI();
             showMessage('⚽ Матч начинается! Противник: ' + opponentName);
             isOnline = true;
 
+            // Подписываемся на матч
+            subscribeToMatch(matchId);
+
             setTimeout(() => { startGame('online'); }, 500);
         }
 
-        // ============================================================
-        // ==================== ИГРОВОЙ ДВИЖОК ========================
-        // ============================================================
-
-        let ball, players, goalkeepers;
+        // ---- ИГРОВОЙ ДВИЖОК ----
+        let canvas, ctx;
+        let gameState = 'menu';
         let homeScore = 0,
             awayScore = 0,
             gameTime = 0;
-        let matchFinished = false,
-            goalCooldown = 0;
-        let isPassing = false,
-            passTarget = null,
-            passTimer = 0;
-        let isShooting = false,
-            shootTimer = 0;
+        let matchFinished = false;
         let keys = { up: false, down: false, left: false, right: false };
+        let localPlayers = {};
+        let localBall = { x: 600, y: 350 };
 
-        // ---- ИНИЦИАЛИЗАЦИЯ ----
         window.onload = function() {
             canvas = document.getElementById('gameCanvas');
             ctx = canvas.getContext('2d');
@@ -1263,8 +1251,7 @@
 
             let joystickTouchId = null,
                 joystickDX = 0,
-                joystickDY = 0,
-                joystickActive = false;
+                joystickDY = 0;
 
             const handleMove = (clientX, clientY) => {
                 const rect = base.getBoundingClientRect();
@@ -1280,7 +1267,14 @@
                 thumb.style.top = (rect.height / 2 + dy - 27.5) + 'px';
                 joystickDX = dx / maxDist;
                 joystickDY = dy / maxDist;
-                joystickActive = dist > 10;
+                const deadZone = 0.15;
+                keys.up = joystickDY < -deadZone;
+                keys.down = joystickDY > deadZone;
+                keys.left = joystickDX < -deadZone;
+                keys.right = joystickDX > deadZone;
+
+                // Отправляем действие на сервер
+                sendAction('move', { dx: keys.left ? -1 : keys.right ? 1 : 0, dy: keys.up ? -1 : keys.down ? 1 : 0 });
             };
 
             const handleEnd = () => {
@@ -1289,12 +1283,12 @@
                 thumb.style.transform = 'translate(-50%, -50%)';
                 joystickDX = 0;
                 joystickDY = 0;
-                joystickActive = false;
                 joystickTouchId = null;
                 keys.up = false;
                 keys.down = false;
                 keys.left = false;
                 keys.right = false;
+                sendAction('move', { dx: 0, dy: 0 });
             };
 
             area.addEventListener('touchstart', e => {
@@ -1309,11 +1303,6 @@
                 for (let touch of e.changedTouches) {
                     if (touch.identifier === joystickTouchId) {
                         handleMove(touch.clientX, touch.clientY);
-                        const deadZone = 0.15;
-                        keys.up = joystickDY < -deadZone;
-                        keys.down = joystickDY > deadZone;
-                        keys.left = joystickDX < -deadZone;
-                        keys.right = joystickDX > deadZone;
                     }
                 }
             }, { passive: false });
@@ -1330,14 +1319,7 @@
             area.addEventListener('mousedown', e => { mouseDown = true;
                 handleMove(e.clientX, e.clientY); });
             document.addEventListener('mousemove', e => {
-                if (mouseDown) {
-                    handleMove(e.clientX, e.clientY);
-                    const deadZone = 0.15;
-                    keys.up = joystickDY < -deadZone;
-                    keys.down = joystickDY > deadZone;
-                    keys.left = joystickDX < -deadZone;
-                    keys.right = joystickDX > deadZone;
-                }
+                if (mouseDown) { handleMove(e.clientX, e.clientY); }
             });
             document.addEventListener('mouseup', () => { if (mouseDown) { mouseDown = false;
                     handleEnd(); } });
@@ -1345,27 +1327,32 @@
 
         function setupActionButtons() {
             document.getElementById('btn-shoot').addEventListener('touchstart', e => { e.preventDefault();
-                handleShoot(); });
-            document.getElementById('btn-shoot').addEventListener('mousedown', handleShoot);
+                sendAction('shoot', { target_x: 1150, target_y: 350 }); });
+            document.getElementById('btn-shoot').addEventListener('mousedown', () => sendAction('shoot', { target_x: 1150,
+                target_y: 350 }));
             document.getElementById('btn-pass').addEventListener('touchstart', e => { e.preventDefault();
-                handlePass(); });
-            document.getElementById('btn-pass').addEventListener('mousedown', handlePass);
+                sendAction('pass', {}); });
+            document.getElementById('btn-pass').addEventListener('mousedown', () => sendAction('pass', {}));
             document.getElementById('btn-tackle').addEventListener('touchstart', e => { e.preventDefault();
-                handleTackle(); });
-            document.getElementById('btn-tackle').addEventListener('mousedown', handleTackle);
+                sendAction('tackle', {}); });
+            document.getElementById('btn-tackle').addEventListener('mousedown', () => sendAction('tackle', {}));
         }
 
         function setupKeyboard() {
             document.addEventListener('keydown', e => {
                 if (gameState === 'playing') {
-                    if (e.key === 'w' || e.key === 'ArrowUp') keys.up = true;
-                    if (e.key === 's' || e.key === 'ArrowDown') keys.down = true;
-                    if (e.key === 'a' || e.key === 'ArrowLeft') keys.left = true;
-                    if (e.key === 'd' || e.key === 'ArrowRight') keys.right = true;
+                    if (e.key === 'w' || e.key === 'ArrowUp') { keys.up = true;
+                        sendAction('move', { dx: keys.left ? -1 : keys.right ? 1 : 0, dy: -1 }); }
+                    if (e.key === 's' || e.key === 'ArrowDown') { keys.down = true;
+                        sendAction('move', { dx: keys.left ? -1 : keys.right ? 1 : 0, dy: 1 }); }
+                    if (e.key === 'a' || e.key === 'ArrowLeft') { keys.left = true;
+                        sendAction('move', { dx: -1, dy: keys.up ? -1 : keys.down ? 1 : 0 }); }
+                    if (e.key === 'd' || e.key === 'ArrowRight') { keys.right = true;
+                        sendAction('move', { dx: 1, dy: keys.up ? -1 : keys.down ? 1 : 0 }); }
                     if (e.key === ' ') { e.preventDefault();
-                        handleShoot(); }
-                    if (e.key === 'e') handlePass();
-                    if (e.key === 'q') handleTackle();
+                        sendAction('shoot', { target_x: 1150, target_y: 350 }); }
+                    if (e.key === 'e') sendAction('pass', {});
+                    if (e.key === 'q') sendAction('tackle', {});
                 }
                 if (e.key === 'Escape') {
                     if (document.getElementById('lobby-overlay').style.display === 'flex') leaveLobby();
@@ -1375,13 +1362,87 @@
                 }
             });
             document.addEventListener('keyup', e => {
-                if (e.key === 'w' || e.key === 'ArrowUp') keys.up = false;
-                if (e.key === 's' || e.key === 'ArrowDown') keys.down = false;
-                if (e.key === 'a' || e.key === 'ArrowLeft') keys.left = false;
-                if (e.key === 'd' || e.key === 'ArrowRight') keys.right = false;
+                if (e.key === 'w' || e.key === 'ArrowUp') { keys.up = false;
+                    sendAction('move', { dx: keys.left ? -1 : keys.right ? 1 : 0, dy: 0 }); }
+                if (e.key === 's' || e.key === 'ArrowDown') { keys.down = false;
+                    sendAction('move', { dx: keys.left ? -1 : keys.right ? 1 : 0, dy: 0 }); }
+                if (e.key === 'a' || e.key === 'ArrowLeft') { keys.left = false;
+                    sendAction('move', { dx: 0, dy: keys.up ? -1 : keys.down ? 1 : 0 }); }
+                if (e.key === 'd' || e.key === 'ArrowRight') { keys.right = false;
+                    sendAction('move', { dx: 0, dy: keys.up ? -1 : keys.down ? 1 : 0 }); }
             });
         }
 
+        // ---- ОТПРАВКА ДЕЙСТВИЙ НА СЕРВЕР ----
+        function sendAction(type, data) {
+            if (!matchId || gameState !== 'playing') return;
+
+            const now = Date.now();
+            if (now - lastActionTime < 30) return; // Не спамим
+            lastActionTime = now;
+
+            const action = { type, ...data };
+            actionQueue.push(action);
+            if (actionQueue.length > 10) actionQueue.shift();
+
+            apiCall('/api/match/action', {
+                match_id: matchId,
+                player_name: playerName,
+                action: action
+            }).catch(() => {});
+        }
+
+        // ---- ОБНОВЛЕНИЕ ИГРЫ ОТ СЕРВЕРА ----
+        function updateGameFromState(state) {
+            if (!state) return;
+
+            // Обновляем счёт
+            if (state.score) {
+                homeScore = state.score.home || 0;
+                awayScore = state.score.away || 0;
+                document.getElementById('score-display').textContent = homeScore + ' : ' + awayScore;
+            }
+
+            // Обновляем время
+            if (state.time !== undefined) {
+                gameTime = state.time;
+                const remaining = Math.max(0, 300 - gameTime);
+                const mins = Math.floor(remaining / 60);
+                const secs = Math.floor(remaining % 60);
+                document.getElementById('timer-display').textContent = '⏱️ ' + mins + ':' + String(secs).padStart(2, '0');
+            }
+
+            // Обновляем позиции игроков
+            if (state.players) {
+                localPlayers = {};
+                for (let name in state.players) {
+                    const p = state.players[name];
+                    localPlayers[name] = {
+                        x: p.x || 0,
+                        y: p.y || 0,
+                        team: p.team || 'home',
+                        hasBall: p.hasBall || false,
+                        name: name,
+                        isPlayer: name === playerName
+                    };
+                }
+            }
+
+            // Обновляем мяч
+            if (state.ball) {
+                localBall = {
+                    x: state.ball.x || 600,
+                    y: state.ball.y || 350
+                };
+            }
+
+            // Проверяем статус
+            if (state.status === 'finished') {
+                endMatch();
+            }
+        }
+
+        // ---- ЗАПУСК ИГРЫ ----
         function startGame(type) {
             isOnline = type === 'online';
             gameState = 'playing';
@@ -1392,389 +1453,170 @@
             document.getElementById('timer-display').style.display = 'block';
             document.getElementById('statusBar').style.display = 'block';
             document.getElementById('ratingDisplay').style.display = 'block';
+
             if (isOnline) {
                 document.getElementById('online-status').style.display = 'block';
                 document.getElementById('online-status').textContent = '🌐 Онлайн: ' + (opponentName || 'Соперник');
                 document.getElementById('statusBar').textContent = '⚽ Онлайн матч!';
             }
+
             homeScore = 0;
             awayScore = 0;
             gameTime = 0;
             matchFinished = false;
-            goalCooldown = 0;
             document.getElementById('score-display').textContent = '0 : 0';
-            initMatch();
-        }
 
-        function initMatch() {
-            ball = { x: 600, y: 350, vx: 0, vy: 0 };
-            players = [];
-            goalkeepers = [];
-
-            let homeTeam, awayTeam;
-            if (mode === '2x2') {
-                homeTeam = [
-                    { name: playerName, x: 250, y: 290, color: '#00b4d8' },
-                    { name: 'Тимейт', x: 250, y: 410, color: '#0077b6' }
-                ];
-                awayTeam = [
-                    { name: opponentName || 'Соперник', x: 950, y: 290, color: '#e63946' },
-                    { name: 'Игрок 4', x: 950, y: 410, color: '#c1121f' }
-                ];
-            } else {
-                homeTeam = [
-                    { name: playerName, x: 220, y: 250, color: '#00b4d8' },
-                    { name: 'Тимейт 1', x: 220, y: 350, color: '#0077b6' },
-                    { name: 'Тимейт 2', x: 220, y: 450, color: '#2d6a4f' }
-                ];
-                awayTeam = [
-                    { name: opponentName || 'Соперник', x: 980, y: 250, color: '#e63946' },
-                    { name: 'Игрок 5', x: 980, y: 350, color: '#c1121f' },
-                    { name: 'Игрок 6', x: 980, y: 450, color: '#f77f00' }
-                ];
+            // Получаем начальное состояние
+            if (isOnline && matchId) {
+                apiGet('/api/match/state/' + matchId).then(result => {
+                    if (!result.error) {
+                        updateGameFromState(result);
+                    }
+                });
             }
-
-            let id = 0;
-            homeTeam.forEach(p => {
-                players.push({ ...p, id: id++, radius: PLAYER_RADIUS, vx: 0, vy: 0, hasBall: false, isPlayer: id === 1,
-                    team: 'home', lastX: p.x, lastY: p.y, stuckTimer: 0, passCooldown: 0, role: 'field',
-                    canGetBall: true });
-            });
-            awayTeam.forEach(p => {
-                players.push({ ...p, id: id++, radius: PLAYER_RADIUS, vx: 0, vy: 0, hasBall: false, isPlayer: false,
-                    team: 'away', lastX: p.x, lastY: p.y, stuckTimer: 0, passCooldown: 0, role: 'field',
-                    canGetBall: true });
-            });
-
-            goalkeepers = [
-                { x: 55, y: 350, radius: 28, team: 'home' },
-                { x: 1145, y: 350, radius: 28, team: 'away' }
-            ];
-
-            players[0].hasBall = true;
-            players.forEach(p => {
-                if (p.team === 'home') { const roles = ['defender', 'midfielder', 'forward'];
-                    p.role = roles[p.id % 3]; } else { const roles = ['forward', 'midfielder', 'defender'];
-                    p.role = roles[p.id % 3]; }
-            });
         }
 
-        function gameLoop() { update();
+        // ---- ИГРОВОЙ ЦИКЛ ----
+        function gameLoop() {
+            update();
             render();
-            requestAnimationFrame(gameLoop); }
+            requestAnimationFrame(gameLoop);
+        }
 
         function update() {
             if (gameState !== 'playing' || matchFinished) return;
 
-            gameTime += 1 / 60;
-            const remaining = Math.max(0, MATCH_TIME - gameTime);
-            const mins = Math.floor(remaining / 60);
-            const secs = Math.floor(remaining % 60);
-            document.getElementById('timer-display').textContent = '⏱️ ' + mins + ':' + String(secs).padStart(2, '0');
-
-            if (remaining <= 0 || homeScore >= 5 || awayScore >= 5) { endMatch(); return; }
-
-            ball.x += ball.vx;
-            ball.y += ball.vy;
-            ball.vx *= 0.98;
-            ball.vy *= 0.98;
-            if (Math.abs(ball.vx) < 0.02) ball.vx = 0;
-            if (Math.abs(ball.vy) < 0.02) ball.vy = 0;
-
-            const margin = 40;
-            if (ball.x < margin + BALL_RADIUS) { ball.x = margin + BALL_RADIUS;
-                ball.vx = Math.abs(ball.vx) * 0.3; }
-            if (ball.x > FIELD_W - margin - BALL_RADIUS) { ball.x = FIELD_W - margin - BALL_RADIUS;
-                ball.vx = -Math.abs(ball.vx) * 0.3; }
-            if (ball.y < margin + BALL_RADIUS) { ball.y = margin + BALL_RADIUS;
-                ball.vy = Math.abs(ball.vy) * 0.3; }
-            if (ball.y > FIELD_H - margin - BALL_RADIUS) { ball.y = FIELD_H - margin - BALL_RADIUS;
-                ball.vy = -Math.abs(ball.vy) * 0.3; }
-
-            checkGoals();
-
-            if (isPassing) {
-                passTimer++;
-                if (passTarget && Math.hypot(ball.x - passTarget.x, ball.y - passTarget.y) < 30) {
-                    players.forEach(p2 => p2.hasBall = false);
-                    passTarget.hasBall = true;
-                    isPassing = false;
-                    passTarget = null;
-                    passTimer = 0;
-                }
-                if (passTimer > 120 || (Math.abs(ball.vx) < 0.1 && Math.abs(ball.vy) < 0.1)) {
-                    isPassing = false;
-                    passTarget = null;
-                    passTimer = 0;
+            // Если онлайн - получаем состояние с сервера каждые 100мс
+            if (isOnline && matchId) {
+                // Уже получаем через WebSocket
+                // Но для надёжности делаем polling
+                if (Date.now() - lastActionTime > 200) {
+                    apiGet('/api/match/state/' + matchId).then(result => {
+                        if (!result.error) {
+                            updateGameFromState(result);
+                        }
+                    }).catch(() => {});
                 }
             }
+        }
 
-            if (isShooting) { shootTimer++; if (shootTimer > 30) { isShooting = false;
-                    shootTimer = 0; } }
+        function render() {
+            const w = canvas.width,
+                h = canvas.height;
+            ctx.clearRect(0, 0, w, h);
 
-            const diff = { speed: 0.6, accuracy: 0.6, aggression: 0.5 };
+            const scale = Math.min(w / 1200, h / 700);
+            const ox = (w - 1200 * scale) / 2;
+            const oy = (h - 700 * scale) / 2;
 
-            players.forEach((p) => {
+            ctx.save();
+            ctx.translate(ox, oy);
+            ctx.scale(scale, scale);
+
+            // Поле
+            ctx.fillStyle = '#1b4332';
+            ctx.fillRect(0, 0, 1200, 700);
+
+            // Разметка
+            ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(40, 40, 1120, 620);
+            ctx.beginPath();
+            ctx.arc(600, 350, 80, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(600, 40);
+            ctx.lineTo(600, 660);
+            ctx.stroke();
+
+            ctx.strokeRect(40, 250, 120, 200);
+            ctx.strokeRect(1040, 250, 120, 200);
+            ctx.strokeRect(40, 290, 60, 120);
+            ctx.strokeRect(1100, 290, 60, 120);
+
+            // Ворота
+            ctx.fillStyle = 'rgba(255,255,255,0.04)';
+            ctx.fillRect(25, 260, 30, 180);
+            ctx.fillRect(1145, 260, 30, 180);
+            ctx.strokeStyle = 'rgba(255,255,255,0.25)';
+            ctx.lineWidth = 3;
+            ctx.strokeRect(25, 260, 30, 180);
+            ctx.strokeRect(1145, 260, 30, 180);
+
+            // Мяч
+            ctx.shadowColor = 'rgba(0,0,0,0.3)';
+            ctx.shadowBlur = 6;
+            ctx.beginPath();
+            ctx.arc(localBall.x || 600, localBall.y || 350, 10, 0, Math.PI * 2);
+            ctx.fillStyle = 'white';
+            ctx.fill();
+            ctx.strokeStyle = '#555';
+            ctx.lineWidth = 1;
+            ctx.stroke();
+            ctx.shadowBlur = 0;
+
+            // Игроки
+            for (let name in localPlayers) {
+                const p = localPlayers[name];
+                ctx.shadowColor = 'rgba(0,0,0,0.3)';
+                ctx.shadowBlur = 6;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, 18, 0, Math.PI * 2);
                 if (p.isPlayer) {
-                    let dx = 0,
-                        dy = 0;
-                    if (keys.up) dy = -PLAYER_SPEED;
-                    if (keys.down) dy = PLAYER_SPEED;
-                    if (keys.left) dx = -PLAYER_SPEED;
-                    if (keys.right) dx = PLAYER_SPEED;
-                    if (dx && dy) { dx *= 0.707;
-                        dy *= 0.707; }
-                    p.x += dx;
-                    p.y += dy;
-                    p.x = Math.max(40, Math.min(FIELD_W - 40, p.x));
-                    p.y = Math.max(40, Math.min(FIELD_H - 40, p.y));
-                    if (p.hasBall && !isPassing && !isShooting) {
-                        ball.x = p.x + 22;
-                        ball.y = p.y;
-                        ball.vx = 0;
-                        ball.vy = 0;
-                    }
+                    const grad = ctx.createRadialGradient(p.x - 5, p.y - 5, 3, p.x, p.y, 18);
+                    grad.addColorStop(0, '#ffd700');
+                    grad.addColorStop(1, '#e6a800');
+                    ctx.fillStyle = grad;
                 } else {
-                    if (!isOnline) { updateBot(p, diff); }
+                    ctx.fillStyle = p.team === 'home' ? '#00b4d8' : '#e63946';
                 }
-                if (p.passCooldown > 0) p.passCooldown--;
-            });
+                ctx.fill();
+                ctx.strokeStyle = 'white';
+                ctx.lineWidth = 1.5;
+                ctx.stroke();
+                ctx.shadowBlur = 0;
 
-            goalkeepers.forEach(gk => {
-                const targetX = gk.team === 'home' ? 60 : 1140;
-                const targetY = 350 + (ball.y - 350) * 0.15;
-                gk.x += (targetX - gk.x) * 0.04;
-                gk.y += (targetY - gk.y) * 0.04;
-                gk.x = Math.max(gk.team === 'home' ? 25 : 1150 - 25, Math.min(gk.team === 'home' ? 100 : 1175, gk
-                    .x));
-                gk.y = Math.max(270, Math.min(430, gk.y));
-                if (Math.hypot(gk.x - ball.x, gk.y - ball.y) < gk.radius + BALL_RADIUS + 5) {
-                    const distToGoal = gk.team === 'home' ? ball.x : FIELD_W - ball.x;
-                    if (distToGoal < 200 && Math.abs(ball.vx) < 4) {
-                        ball.vx *= -0.2;
-                        ball.vy *= -0.2;
-                        if (Math.abs(ball.vx) < 0.5) {
-                            const ang = gk.team === 'home' ? -0.2 + Math.random() * 0.4 : Math.PI - 0.2 + Math
-                                .random() * 0.4;
-                            ball.vx = (gk.team === 'home' ? 1 : -1) * (1.5 + Math.random() * 2);
-                            ball.vy = (Math.random() - 0.5) * 2;
-                            players.forEach(p => p.hasBall = false);
-                        }
-                    }
-                }
-            });
+                // Имя
+                ctx.fillStyle = 'white';
+                ctx.font = 'bold 9px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText(name, p.x, p.y - 28);
 
-            if (!isPassing && !isShooting) {
-                players.forEach(p => {
-                    if (!p.hasBall && p.canGetBall) {
-                        const dist = Math.hypot(p.x - ball.x, p.y - ball.y);
-                        if (dist < p.radius + BALL_RADIUS + 2) {
-                            const ang = Math.atan2(ball.y - p.y, ball.x - p.x);
-                            const power = 0.4 + Math.random() * 0.4;
-                            ball.vx = power * Math.cos(ang);
-                            ball.vy = power * Math.sin(ang);
-                            players.forEach(p2 => p2.hasBall = false);
-                            p.hasBall = true;
-                            if (!p.isPlayer && !isOnline) {
-                                setTimeout(() => botAction(p, diff), 400 + Math.random() * 300);
-                            }
-                        }
-                    }
-                });
-            }
+                // Индикатор мяча
+                if (p.hasBall) {
+                    ctx.shadowColor = 'rgba(255,215,0,0.3)';
+                    ctx.shadowBlur = 12;
+                    ctx.fillStyle = '#ffd700';
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, 5, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.shadowBlur = 0;
+                }
 
-            if (goalCooldown > 0) goalCooldown--;
-        }
-
-        function updateBot(p, diff) {
-            const isHome = p.team === 'home';
-            const role = p.role || 'midfielder';
-            let targetX = 600,
-                targetY = 350;
-
-            if (p.hasBall) {
-                if (isPassing) return;
-                targetX = isHome ? FIELD_W - 120 : 120;
-                targetY = 350 + (Math.random() - 0.5) * 60;
-                const nearbyEnemy = players.some(p2 =>
-                    p2.team !== p.team && Math.hypot(p.x - p2.x, p.y - p2.y) < 70
-                );
-                if (nearbyEnemy && Math.random() < 0.35 * diff.accuracy && p.passCooldown === 0 && !isPassing) {
-                    botAction(p, diff); return;
-                }
-                const distToGoal = isHome ? FIELD_W - p.x : p.x;
-                if (distToGoal < 200 && Math.random() < 0.2 * diff.accuracy && !isPassing) {
-                    botAction(p, diff); return;
-                }
-                const dx = targetX - p.x,
-                    dy = targetY - p.y;
-                const dist = Math.hypot(dx, dy);
-                if (dist > 3) {
-                    const speed = BOT_SPEED_BASE * (0.4 + diff.speed * 0.6);
-                    const step = Math.min(speed, dist);
-                    p.x += (dx / dist) * step;
-                    p.y += (dy / dist) * step;
-                    if (!isPassing && !isShooting) { ball.x = p.x + 22;
-                        ball.y = p.y;
-                        ball.vx = 0;
-                        ball.vy = 0; }
-                }
-            } else {
-                if (role === 'defender') {
-                    targetX = isHome ? 180 + Math.random() * 60 : 1020 - Math.random() * 60;
-                    targetY = 350 + (Math.random() - 0.5) * 100;
-                } else if (role === 'midfielder') {
-                    targetX = isHome ? 350 + Math.random() * 150 : 850 - Math.random() * 150;
-                    targetY = 350 + (Math.random() - 0.5) * 120;
-                } else {
-                    targetX = isHome ? 950 + Math.random() * 60 : 250 - Math.random() * 60;
-                    targetY = 350 + (Math.random() - 0.5) * 100;
-                }
-                const distToBall = Math.hypot(p.x - ball.x, p.y - ball.y);
-                if (distToBall < 140 && !players.some(p2 => p2.team === p.team && p2.hasBall) && !isPassing && !isShooting) {
-                    targetX = ball.x + (isHome ? 15 : -15);
-                    targetY = ball.y;
-                }
-                players.forEach(p2 => {
-                    if (p2.team !== p.team && p2.hasBall && Math.hypot(p.x - p2.x, p.y - p2.y) < 40 && !isPassing &&
-                        !isShooting) {
-                        if (Math.random() < diff.aggression * 0.25) {
-                            const ang = Math.atan2(p2.y - p.y, p2.x - p.x);
-                            ball.vx = 1.2 * Math.cos(ang + (Math.random() - 0.5) * 0.5);
-                            ball.vy = 1.2 * Math.sin(ang + (Math.random() - 0.5) * 0.5);
-                            p2.hasBall = false;
-                            p.hasBall = true;
-                        }
-                    }
-                });
-                const dx = targetX - p.x,
-                    dy = targetY - p.y;
-                const dist = Math.hypot(dx, dy);
-                if (dist > 3) {
-                    const speed = BOT_SPEED_BASE * (0.4 + diff.speed * 0.6) * 0.8;
-                    const step = Math.min(speed, dist);
-                    p.x += (dx / dist) * step;
-                    p.y += (dy / dist) * step;
+                // Свечение для игрока
+                if (p.isPlayer) {
+                    ctx.shadowColor = '#ffd700';
+                    ctx.shadowBlur = 15;
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, 22, 0, Math.PI * 2);
+                    ctx.strokeStyle = 'rgba(255,215,0,0.2)';
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+                    ctx.shadowBlur = 0;
                 }
             }
 
-            if (Math.abs(p.x - p.lastX) < 0.3 && Math.abs(p.y - p.lastY) < 0.3) {
-                p.stuckTimer++;
-                if (p.stuckTimer > 50) { targetX += (Math.random() - 0.5) * 80;
-                    targetY += (Math.random() - 0.5) * 80;
-                    p.stuckTimer = 0; }
-            } else { p.stuckTimer = Math.max(0, p.stuckTimer - 2); }
-            p.lastX = p.x;
-            p.lastY = p.y;
-            p.x = Math.max(45, Math.min(FIELD_W - 45, p.x));
-            p.y = Math.max(45, Math.min(FIELD_H - 45, p.y));
-        }
+            ctx.restore();
 
-        function botAction(p, diff) {
-            if (!p.hasBall || matchFinished || p.passCooldown > 0 || isPassing || isShooting) return;
-            const isHome = p.team === 'home';
-            const r = Math.random();
-
-            if (r < 0.45) {
-                const teammates = players.filter(p2 => p2.team === p.team && p2.id !== p.id);
-                if (teammates.length > 0) {
-                    let best = null,
-                        bestScore = -999;
-                    teammates.forEach(tm => {
-                        const distToEnemy = Math.min(...players.filter(p2 => p2.team !== p.team)
-                            .map(p2 => Math.hypot(tm.x - p2.x, tm.y - p2.y)));
-                        const score = -Math.hypot(tm.x - p.x, tm.y - p.y) * 0.3 + distToEnemy * 0.5;
-                        if (score > bestScore) { bestScore = score;
-                            best = tm; }
-                    });
-                    if (best && Math.hypot(best.x - p.x, best.y - p.y) < 400) {
-                        isPassing = true;
-                        passTarget = best;
-                        passTimer = 0;
-                        const dist = Math.hypot(best.x - p.x, best.y - p.y);
-                        const power = Math.min(6, Math.max(1.5, dist / 40));
-                        const ang = Math.atan2(best.y - p.y, best.x - p.x);
-                        ball.vx = power * Math.cos(ang + (Math.random() - 0.5) * 0.06);
-                        ball.vy = power * Math.sin(ang + (Math.random() - 0.5) * 0.06);
-                        p.hasBall = false;
-                        p.passCooldown = 15;
-                        setTimeout(() => {
-                            if (isPassing && passTarget) {
-                                players.forEach(p2 => p2.hasBall = false);
-                                passTarget.hasBall = true;
-                                isPassing = false;
-                                passTarget = null;
-                                passTimer = 0;
-                            }
-                        }, 700);
-                        return;
-                    }
-                }
+            // Счёт
+            if (gameState === 'playing') {
+                ctx.fillStyle = 'rgba(0,0,0,0.5)';
+                ctx.fillRect(w / 2 - 45, 6, 90, 28);
+                ctx.fillStyle = 'white';
+                ctx.font = 'bold 18px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText(homeScore + ' : ' + awayScore, w / 2, 27);
             }
-
-            if (r < 0.75) {
-                const goalX = isHome ? FIELD_W - 50 : 50;
-                const goalY = 350 + (Math.random() - 0.5) * 60;
-                const ang = Math.atan2(goalY - p.y, goalX - p.x);
-                const power = 4 + Math.random() * 3;
-                ball.vx = power * Math.cos(ang + (Math.random() - 0.5) * 0.12);
-                ball.vy = power * Math.sin(ang + (Math.random() - 0.5) * 0.12);
-                p.hasBall = false;
-                isShooting = true;
-                shootTimer = 0;
-                return;
-            }
-
-            const goalX = isHome ? FIELD_W - 120 : 120;
-            const goalY = 350 + (Math.random() - 0.5) * 40;
-            const ang = Math.atan2(goalY - p.y, goalX - p.x);
-            ball.vx = 1.2 * Math.cos(ang);
-            ball.vy = 1.2 * Math.sin(ang);
-            p.hasBall = false;
-            setTimeout(() => {
-                if (!isPassing && !isShooting) {
-                    players.forEach(p2 => p2.hasBall = false);
-                    p.hasBall = true;
-                }
-            }, 250);
-        }
-
-        function checkGoals() {
-            if (goalCooldown > 0) return;
-            if (ball.x < 35 && ball.y > 350 - GOAL_HEIGHT / 2 && ball.y < 350 + GOAL_HEIGHT / 2) {
-                if (ball.vx < -0.2) {
-                    awayScore++;
-                    goalCooldown = 80;
-                    document.getElementById('score-display').textContent = homeScore + ' : ' + awayScore;
-                    showMessage('⚽ ГОЛ! Команда Б забила!');
-                    if (awayScore >= 5) endMatch();
-                    else resetBall();
-                }
-            }
-            if (ball.x > FIELD_W - 35 && ball.y > 350 - GOAL_HEIGHT / 2 && ball.y < 350 + GOAL_HEIGHT / 2) {
-                if (ball.vx > 0.2) {
-                    homeScore++;
-                    goalCooldown = 80;
-                    document.getElementById('score-display').textContent = homeScore + ' : ' + awayScore;
-                    showMessage('⚽ ГОЛ! Команда А забила!');
-                    if (homeScore >= 5) endMatch();
-                    else resetBall();
-                }
-            }
-        }
-
-        function resetBall() {
-            ball.x = 600;
-            ball.y = 350;
-            ball.vx = (Math.random() - 0.5) * 0.8;
-            ball.vy = (Math.random() - 0.5) * 0.8;
-            players.forEach(p => p.hasBall = false);
-            players[0].hasBall = true;
-            isPassing = false;
-            passTarget = null;
-            isShooting = false;
-            passTimer = 0;
-            shootTimer = 0;
         }
 
         function endMatch() {
@@ -1782,7 +1624,7 @@
             matchFinished = true;
             const isWin = homeScore > awayScore;
 
-            if (playerName && !isOnline) {
+            if (playerName && isOnline) {
                 if (isWin) {
                     playerCrystals += 30 + homeScore * 5;
                     showMessage('🏆 ПОБЕДА!');
@@ -1808,192 +1650,6 @@
                 isOnline = false;
                 updateUI();
             }, 2500);
-        }
-
-        function handleShoot() {
-            const p = players.find(p => p.isPlayer);
-            if (!p || !p.hasBall || matchFinished || isPassing || isShooting) return;
-            const isHome = p.team === 'home';
-            const goalX = isHome ? FIELD_W - 50 : 50;
-            const goalY = 350 + (Math.random() - 0.5) * 60;
-            const ang = Math.atan2(goalY - p.y, goalX - p.x);
-            const power = 4 + Math.random() * 3;
-            ball.vx = power * Math.cos(ang + (Math.random() - 0.5) * 0.12);
-            ball.vy = power * Math.sin(ang + (Math.random() - 0.5) * 0.12);
-            p.hasBall = false;
-            isShooting = true;
-            shootTimer = 0;
-        }
-
-        function handlePass() {
-            const p = players.find(p => p.isPlayer);
-            if (!p || !p.hasBall || matchFinished || isPassing || isShooting) return;
-            const teammates = players.filter(p2 => p2.team === p.team && p2.id !== p.id);
-            if (teammates.length > 0) {
-                let best = null,
-                    bestScore = -999;
-                teammates.forEach(tm => {
-                    const dist = Math.hypot(tm.x - p.x, tm.y - p.y);
-                    const score = -dist + Math.random() * 20;
-                    if (score > bestScore) { bestScore = score;
-                        best = tm; }
-                });
-                if (best && Math.hypot(best.x - p.x, best.y - p.y) < 400) {
-                    isPassing = true;
-                    passTarget = best;
-                    passTimer = 0;
-                    const dist = Math.hypot(best.x - p.x, best.y - p.y);
-                    const power = Math.min(6, Math.max(1.5, dist / 40));
-                    const ang = Math.atan2(best.y - p.y, best.x - p.x);
-                    ball.vx = power * Math.cos(ang + (Math.random() - 0.5) * 0.06);
-                    ball.vy = power * Math.sin(ang + (Math.random() - 0.5) * 0.06);
-                    p.hasBall = false;
-                    setTimeout(() => {
-                        if (isPassing && passTarget) {
-                            players.forEach(p2 => p2.hasBall = false);
-                            passTarget.hasBall = true;
-                            isPassing = false;
-                            passTarget = null;
-                            passTimer = 0;
-                        }
-                    }, 600);
-                }
-            }
-        }
-
-        function handleTackle() {
-            const p = players.find(p => p.isPlayer);
-            if (!p || matchFinished || isPassing || isShooting) return;
-            players.forEach(p2 => {
-                if (p2.team !== p.team && p2.hasBall && Math.hypot(p.x - p2.x, p.y - p2.y) < 40) {
-                    const ang = Math.atan2(p2.y - p.y, p2.x - p.x);
-                    ball.vx = 1.5 * Math.cos(ang + (Math.random() - 0.5) * 0.4);
-                    ball.vy = 1.5 * Math.sin(ang + (Math.random() - 0.5) * 0.4);
-                    p2.hasBall = false;
-                    p.hasBall = true;
-                }
-            });
-        }
-
-        function render() {
-            const w = canvas.width,
-                h = canvas.height;
-            ctx.clearRect(0, 0, w, h);
-            const scale = Math.min(w / FIELD_W, h / FIELD_H);
-            const ox = (w - FIELD_W * scale) / 2;
-            const oy = (h - FIELD_H * scale) / 2;
-            ctx.save();
-            ctx.translate(ox, oy);
-            ctx.scale(scale, scale);
-
-            ctx.fillStyle = '#1b4332';
-            ctx.fillRect(0, 0, FIELD_W, FIELD_H);
-            ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
-            ctx.lineWidth = 2;
-            ctx.strokeRect(40, 40, FIELD_W - 80, FIELD_H - 80);
-            ctx.beginPath();
-            ctx.arc(FIELD_W / 2, FIELD_H / 2, 80, 0, Math.PI * 2);
-            ctx.stroke();
-            ctx.beginPath();
-            ctx.moveTo(FIELD_W / 2, 40);
-            ctx.lineTo(FIELD_W / 2, FIELD_H - 40);
-            ctx.stroke();
-            ctx.strokeRect(40, FIELD_H / 2 - 100, 120, 200);
-            ctx.strokeRect(FIELD_W - 160, FIELD_H / 2 - 100, 120, 200);
-            ctx.strokeRect(40, FIELD_H / 2 - 60, 60, 120);
-            ctx.strokeRect(FIELD_W - 100, FIELD_H / 2 - 60, 60, 120);
-            ctx.fillStyle = 'rgba(255, 255, 255, 0.04)';
-            ctx.fillRect(25, FIELD_H / 2 - GOAL_HEIGHT / 2, GOAL_WIDTH, GOAL_HEIGHT);
-            ctx.fillRect(FIELD_W - 25 - GOAL_WIDTH, FIELD_H / 2 - GOAL_HEIGHT / 2, GOAL_WIDTH, GOAL_HEIGHT);
-            ctx.strokeStyle = 'rgba(255, 255, 255, 0.25)';
-            ctx.lineWidth = 3;
-            ctx.strokeRect(25, FIELD_H / 2 - GOAL_HEIGHT / 2, GOAL_WIDTH, GOAL_HEIGHT);
-            ctx.strokeRect(FIELD_W - 25 - GOAL_WIDTH, FIELD_H / 2 - GOAL_HEIGHT / 2, GOAL_WIDTH, GOAL_HEIGHT);
-
-            ctx.shadowColor = 'rgba(0, 0, 0, 0.3)';
-            ctx.shadowBlur = 6;
-            ctx.beginPath();
-            ctx.arc(ball.x, ball.y, BALL_RADIUS, 0, Math.PI * 2);
-            ctx.fillStyle = 'white';
-            ctx.fill();
-            ctx.strokeStyle = '#555';
-            ctx.lineWidth = 1;
-            ctx.stroke();
-            ctx.shadowBlur = 0;
-
-            goalkeepers.forEach(gk => {
-                ctx.shadowColor = 'rgba(0, 0, 0, 0.3)';
-                ctx.shadowBlur = 6;
-                ctx.beginPath();
-                ctx.arc(gk.x, gk.y, gk.radius, 0, Math.PI * 2);
-                const grad = ctx.createRadialGradient(gk.x - 5, gk.y - 5, 3, gk.x, gk.y, gk.radius);
-                grad.addColorStop(0, gk.team === 'home' ? '#4488ff' : '#ff4444');
-                grad.addColorStop(1, gk.team === 'home' ? '#0033aa' : '#aa2200');
-                ctx.fillStyle = grad;
-                ctx.fill();
-                ctx.strokeStyle = '#ffd700';
-                ctx.lineWidth = 2;
-                ctx.stroke();
-                ctx.shadowBlur = 0;
-                ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
-                ctx.font = 'bold 14px Arial';
-                ctx.textAlign = 'center';
-                ctx.fillText('🧤', gk.x, gk.y - gk.radius - 8);
-            });
-
-            players.forEach(p => {
-                ctx.shadowColor = 'rgba(0, 0, 0, 0.3)';
-                ctx.shadowBlur = 6;
-                ctx.beginPath();
-                ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
-                if (p.isPlayer) {
-                    const grad = ctx.createRadialGradient(p.x - 5, p.y - 5, 3, p.x, p.y, p.radius);
-                    grad.addColorStop(0, '#ffd700');
-                    grad.addColorStop(1, '#e6a800');
-                    ctx.fillStyle = grad;
-                } else {
-                    ctx.fillStyle = p.color;
-                }
-                ctx.fill();
-                ctx.strokeStyle = 'white';
-                ctx.lineWidth = 1.5;
-                ctx.stroke();
-                ctx.shadowBlur = 0;
-                ctx.fillStyle = 'white';
-                ctx.font = 'bold 9px Arial';
-                ctx.textAlign = 'center';
-                ctx.fillText(p.name, p.x, p.y - p.radius - 10);
-                if (p.hasBall) {
-                    ctx.shadowColor = 'rgba(255, 215, 0, 0.3)';
-                    ctx.shadowBlur = 12;
-                    ctx.fillStyle = '#ffd700';
-                    ctx.beginPath();
-                    ctx.arc(p.x, p.y, 5, 0, Math.PI * 2);
-                    ctx.fill();
-                    ctx.shadowBlur = 0;
-                }
-                if (p.isPlayer) {
-                    ctx.shadowColor = '#ffd700';
-                    ctx.shadowBlur = 15;
-                    ctx.beginPath();
-                    ctx.arc(p.x, p.y, p.radius + 4, 0, Math.PI * 2);
-                    ctx.strokeStyle = 'rgba(255, 215, 0, 0.2)';
-                    ctx.lineWidth = 2;
-                    ctx.stroke();
-                    ctx.shadowBlur = 0;
-                }
-            });
-
-            ctx.restore();
-
-            if (gameState === 'playing') {
-                ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
-                ctx.fillRect(w / 2 - 45, 6, 90, 28);
-                ctx.fillStyle = 'white';
-                ctx.font = 'bold 18px Arial';
-                ctx.textAlign = 'center';
-                ctx.fillText(homeScore + ' : ' + awayScore, w / 2, 27);
-            }
         }
 
         function showMessage(text) {
@@ -2063,10 +1719,9 @@
             }, 800);
         }
 
-        console.log('⚽ STREET FOOTBALL ONLINE v17.0 загружена!');
+        console.log('⚽ STREET FOOTBALL ONLINE v18.0 загружена!');
         console.log('👤 Игрок:', playerName || 'Гость');
-        console.log('🌐 Серверная синхронизация лобби!');
-        console.log('📦 Лобби НЕ удаляются!');
+        console.log('🌐 Онлайн матчи с серверной синхронизацией!');
     </script>
 </body>
 </html>
