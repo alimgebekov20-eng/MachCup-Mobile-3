@@ -11,12 +11,10 @@ import threading
 from datetime import datetime
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-from flask_socketio import SocketIO, emit, join_room, leave_room
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'your-secret-key-here'
 CORS(app, origins=['*'])
-socketio = SocketIO(app, cors_allowed_origins='*', async_mode='threading')
 
 # ============================================================
 # ==================== ХРАНИЛИЩЕ ==============================
@@ -24,8 +22,7 @@ socketio = SocketIO(app, cors_allowed_origins='*', async_mode='threading')
 
 lobbies = {}
 matches = {}
-subscriptions = {}
-match_subscriptions = {}
+match_clients = {}
 
 # ============================================================
 # ==================== КОНСТАНТЫ ==============================
@@ -40,7 +37,7 @@ GOAL_H = 180
 PLAYER_SPEED = 3.5
 
 # ============================================================
-# ==================== КЛАСС МАТЧА (БЕЗ БОТОВ!) ==============
+# ==================== КЛАСС МАТЧА ===========================
 # ============================================================
 
 class Match:
@@ -55,16 +52,12 @@ class Match:
         self.goal_cooldown = 0
         self.last_update = time.time()
         
-        # Инициализация игроков (ТОЛЬКО РЕАЛЬНЫЕ ИГРОКИ!)
         self.init_players(players_list)
     
     def init_players(self, players_list):
-        """ТОЛЬКО РЕАЛЬНЫЕ ИГРОКИ, БЕЗ БОТОВ!"""
-        # Позиции для 1x1
         home_positions = [(250, 350)]
         away_positions = [(950, 350)]
         
-        # Если 2x2 или 3x3 - расширяем
         if len(players_list) > 2:
             home_positions = [(250, 290), (250, 410)]
             away_positions = [(950, 290), (950, 410)]
@@ -92,18 +85,12 @@ class Match:
                 'radius': PLAYER_RADIUS
             }
         
-        # Мяч у первого игрока
         if players_list:
             first = players_list[0]
             self.ball['x'] = self.players[first]['x'] + 22
             self.ball['y'] = self.players[first]['y']
     
-    # ============================================================
-    # ====== ДВИЖЕНИЕ ============================================
-    # ============================================================
-    
     def start_move(self, player_name, direction):
-        """Игрок начал движение"""
         if player_name not in self.players:
             return False
         
@@ -111,7 +98,6 @@ class Match:
         dx = direction.get('dx', 0)
         dy = direction.get('dy', 0)
         
-        # Нормализация для диагонали
         if dx != 0 and dy != 0:
             dx *= 0.707
             dy *= 0.707
@@ -124,11 +110,9 @@ class Match:
             self.ball['vx'] = player['vx']
             self.ball['vy'] = player['vy']
         
-        print(f'▶️ {player_name} начал движение ({dx}, {dy})')
         return True
     
     def stop_move(self, player_name):
-        """Игрок остановился"""
         if player_name not in self.players:
             return False
         
@@ -141,15 +125,9 @@ class Match:
             self.ball['vx'] = 0
             self.ball['vy'] = 0
         
-        print(f'⏹️ {player_name} остановился')
         return True
     
-    # ============================================================
-    # ====== УДАР ================================================
-    # ============================================================
-    
     def shoot(self, player_name, target_x, target_y):
-        """Удар по воротам"""
         if player_name not in self.players:
             return None
         
@@ -172,8 +150,6 @@ class Match:
             self.ball['vy'] = power * math.sin(angle)
             player['hasBall'] = False
             
-            print(f'⚽ {player_name} ударил!')
-            
             return {
                 'ball_vx': self.ball['vx'],
                 'ball_vy': self.ball['vy'],
@@ -182,12 +158,7 @@ class Match:
         
         return None
     
-    # ============================================================
-    # ====== ОТБОР ===============================================
-    # ============================================================
-    
     def tackle(self, player_name):
-        """Отбор мяча"""
         if player_name not in self.players:
             return {'success': False}
         
@@ -203,30 +174,22 @@ class Match:
                     self.ball['y'] = player['y']
                     self.ball['vx'] = 0
                     self.ball['vy'] = 0
-                    print(f'🛡️ {player_name} отобрал мяч у {p["name"]}')
                     return {'success': True, 'new_owner': player_name}
         
         return {'success': False}
     
-    # ============================================================
-    # ====== ОБНОВЛЕНИЕ ==========================================
-    # ============================================================
-    
     def update(self):
-        """Обновление позиций (только для движущихся игроков)"""
         if self.status != 'playing':
             return
         
         self.time += 1/30
         self.goal_cooldown = max(0, self.goal_cooldown - 1)
         
-        # Обновляем игроков
         for name, player in self.players.items():
             if player['moving']:
                 player['x'] += player['vx']
                 player['y'] += player['vy']
                 
-                # Границы поля
                 player['x'] = max(40, min(1160, player['x']))
                 player['y'] = max(40, min(660, player['y']))
                 
@@ -236,7 +199,6 @@ class Match:
                     self.ball['vx'] = 0
                     self.ball['vy'] = 0
         
-        # Обновляем мяч
         if self.ball['vx'] != 0 or self.ball['vy'] != 0:
             self.ball['x'] += self.ball['vx']
             self.ball['y'] += self.ball['vy']
@@ -248,7 +210,6 @@ class Match:
             if abs(self.ball['vy']) < 0.05:
                 self.ball['vy'] = 0
             
-            # Границы мяча
             margin = 40
             if self.ball['x'] < margin + BALL_RADIUS:
                 self.ball['x'] = margin + BALL_RADIUS
@@ -263,34 +224,27 @@ class Match:
                 self.ball['y'] = FIELD_H - margin - BALL_RADIUS
                 self.ball['vy'] = -abs(self.ball['vy']) * 0.3
         
-        # Проверка голов
         self.check_goals()
     
     def check_goals(self):
-        """Проверка голов"""
         if self.goal_cooldown > 0:
             return
         
-        # Левые ворота (home)
         if self.ball['x'] < 35 and self.ball['y'] > 260 and self.ball['y'] < 440:
             if self.ball['vx'] < -0.2:
                 self.score['away'] += 1
                 self.goal_cooldown = 60
                 self.reset_ball()
-                print(f'⚽ ГОЛ! Команда Б забила! ({self.score["away"]})')
                 return
         
-        # Правые ворота (away)
         if self.ball['x'] > 1165 and self.ball['y'] > 260 and self.ball['y'] < 440:
             if self.ball['vx'] > 0.2:
                 self.score['home'] += 1
                 self.goal_cooldown = 60
                 self.reset_ball()
-                print(f'⚽ ГОЛ! Команда А забила! ({self.score["home"]})')
                 return
     
     def reset_ball(self):
-        """Сброс мяча"""
         self.ball['x'] = 600
         self.ball['y'] = 350
         self.ball['vx'] = (random.random() - 0.5) * 0.8
@@ -301,7 +255,6 @@ class Match:
         self.players[first]['hasBall'] = True
     
     def get_state(self):
-        """Текущее состояние игры"""
         players_data = {}
         for name, p in self.players.items():
             players_data[name] = {
@@ -395,8 +348,6 @@ def join_lobby():
         
         lobby['players'].append(player)
         
-        notify_lobby_update(lobby_id)
-        
         return jsonify({
             'success': True,
             'lobby': lobby
@@ -427,15 +378,12 @@ def start_lobby():
         
         lobby['status'] = 'playing'
         
-        # Создаём матч (ТОЛЬКО РЕАЛЬНЫЕ ИГРОКИ!)
         match_id = 'match_' + str(uuid.uuid4())[:8]
         match = Match(match_id, lobby['players'], lobby['mode'])
         matches[match_id] = match
         
         lobby['match_id'] = match_id
-        
-        notify_lobby_update(lobby_id)
-        broadcast_match_state(match_id)
+        match_clients[match_id] = lobby['players']
         
         # Запускаем поток обновления
         def match_loop():
@@ -443,7 +391,6 @@ def start_lobby():
                 match = matches[match_id]
                 if match.status == 'playing':
                     match.update()
-                    broadcast_match_state(match_id)
                 time.sleep(1/30)
         
         thread = threading.Thread(target=match_loop, daemon=True)
@@ -481,8 +428,6 @@ def leave_lobby():
         if lobby['host'] == player and len(lobby['players']) > 0:
             lobby['host'] = lobby['players'][0]
         
-        notify_lobby_update(lobby_id)
-        
         return jsonify({
             'success': True,
             'lobby': lobby
@@ -500,10 +445,6 @@ def get_lobby(lobby_id):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-
-# ============================================================
-# ==================== API МАТЧА ==============================
-# ============================================================
 
 @app.route('/api/match/state/<match_id>', methods=['GET'])
 def get_match_state(match_id):
@@ -529,13 +470,9 @@ def match_move():
             return jsonify({'error': 'Матч не найден'}), 404
         
         match = matches[match_id]
-        result = match.start_move(player_name, direction)
+        match.start_move(player_name, direction)
         
-        if result:
-            broadcast_match_state(match_id)
-            return jsonify({'success': True})
-        
-        return jsonify({'success': False, 'error': 'Не удалось начать движение'})
+        return jsonify({'success': True})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
@@ -551,13 +488,9 @@ def match_stop():
             return jsonify({'error': 'Матч не найден'}), 404
         
         match = matches[match_id]
-        result = match.stop_move(player_name)
+        match.stop_move(player_name)
         
-        if result:
-            broadcast_match_state(match_id)
-            return jsonify({'success': True})
-        
-        return jsonify({'success': False, 'error': 'Не удалось остановить'})
+        return jsonify({'success': True})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
@@ -577,11 +510,7 @@ def match_shoot():
         match = matches[match_id]
         result = match.shoot(player_name, target_x, target_y)
         
-        if result:
-            broadcast_match_state(match_id)
-            return jsonify({'success': True, 'data': result})
-        
-        return jsonify({'success': False, 'error': 'Не удалось ударить'})
+        return jsonify({'success': True if result else False})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
@@ -599,11 +528,7 @@ def match_tackle():
         match = matches[match_id]
         result = match.tackle(player_name)
         
-        if result['success']:
-            broadcast_match_state(match_id)
-            return jsonify({'success': True, 'data': result})
-        
-        return jsonify({'success': False, 'error': 'Не удалось отобрать'})
+        return jsonify({'success': result['success']})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
@@ -622,105 +547,14 @@ def match_leave():
                 time.sleep(5)
                 if match_id in matches:
                     del matches[match_id]
+                    if match_id in match_clients:
+                        del match_clients[match_id]
             
             threading.Thread(target=delete_match, daemon=True).start()
-            broadcast_match_state(match_id)
         
         return jsonify({'success': True})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
-
-
-# ============================================================
-# ==================== WEBSOCKET ==============================
-# ============================================================
-
-def notify_lobby_update(lobby_id):
-    if lobby_id not in lobbies:
-        return
-    
-    lobby = lobbies[lobby_id]
-    
-    for sid, sub_lobby_id in subscriptions.items():
-        if sub_lobby_id == lobby_id:
-            socketio.emit('lobby_update', {
-                'lobby_id': lobby_id,
-                'lobby': lobby
-            }, room=sid)
-
-
-def broadcast_match_state(match_id):
-    if match_id not in matches:
-        return
-    
-    match = matches[match_id]
-    state = match.get_state()
-    
-    for sid in match_subscriptions.get(match_id, []):
-        socketio.emit('match_update', {
-            'match_id': match_id,
-            'state': state
-        }, room=sid)
-
-
-@socketio.on('connect')
-def handle_connect():
-    print(f'🔌 Клиент подключен: {request.sid}')
-
-
-@socketio.on('disconnect')
-def handle_disconnect():
-    if request.sid in subscriptions:
-        del subscriptions[request.sid]
-    
-    for match_id, sids in match_subscriptions.items():
-        if request.sid in sids:
-            sids.remove(request.sid)
-    
-    print(f'🔌 Клиент отключен: {request.sid}')
-
-
-@socketio.on('subscribe_lobby')
-def handle_subscribe(data):
-    lobby_id = data.get('lobby_id')
-    if lobby_id:
-        subscriptions[request.sid] = lobby_id
-        if lobby_id in lobbies:
-            emit('lobby_update', {
-                'lobby_id': lobby_id,
-                'lobby': lobbies[lobby_id]
-            })
-
-
-@socketio.on('unsubscribe_lobby')
-def handle_unsubscribe():
-    if request.sid in subscriptions:
-        del subscriptions[request.sid]
-
-
-@socketio.on('subscribe_match')
-def handle_subscribe_match(data):
-    match_id = data.get('match_id')
-    if match_id:
-        if match_id not in match_subscriptions:
-            match_subscriptions[match_id] = []
-        if request.sid not in match_subscriptions[match_id]:
-            match_subscriptions[match_id].append(request.sid)
-        
-        if match_id in matches:
-            state = matches[match_id].get_state()
-            emit('match_update', {
-                'match_id': match_id,
-                'state': state
-            })
-
-
-@socketio.on('unsubscribe_match')
-def handle_unsubscribe_match(data):
-    match_id = data.get('match_id')
-    if match_id and match_id in match_subscriptions:
-        if request.sid in match_subscriptions[match_id]:
-            match_subscriptions[match_id].remove(request.sid)
 
 
 # ============================================================
@@ -924,4 +758,4 @@ def home():
 
 
 if __name__ == '__main__':
-    socketio.run(app, host='0.0.0.0', port=5000, debug=False)
+    app.run(host='0.0.0.0', port=5000, debug=False)
