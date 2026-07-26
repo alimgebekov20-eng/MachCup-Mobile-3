@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>⚽ STREET FOOTBALL - 1x1</title>
     <style>
-        /* ===== ВЕСЬ СТИЛЬ ТОТ ЖЕ ===== */
         * { margin: 0; padding: 0; box-sizing: border-box; touch-action: none; user-select: none; -webkit-touch-callout: none; }
         html, body { width: 100%; height: 100%; overflow: hidden; position: fixed; background: #0d1b2a; font-family: Arial, sans-serif; color: white; }
         canvas { display: block; width: 100vw; height: 100vh; background: #1b4332; image-rendering: pixelated; }
@@ -204,6 +203,7 @@
         let syncInterval = null;
         let lastDirection = { dx: 0, dy: 0 };
         let updateInterval = null;
+        let isMatchStarted = false;
 
         // ============================================================
         // ====== API ==================================================
@@ -636,11 +636,51 @@
             closeLobbyUI();
             showMessage('⚽ Матч начинается! Противник: ' + opponentName);
             isOnline = true;
+            isMatchStarted = true;
+
+            // Показываем игровые элементы
+            document.getElementById('joystick-area').style.display = 'block';
+            document.getElementById('action-buttons').style.display = 'flex';
+            document.getElementById('score-display').style.display = 'block';
+            document.getElementById('timer-display').style.display = 'block';
+            document.getElementById('statusBar').style.display = 'block';
+            document.getElementById('ratingDisplay').style.display = 'block';
+            document.getElementById('exit-match-btn').style.display = 'block';
+            document.getElementById('online-status').style.display = 'block';
+            document.getElementById('online-status').textContent = '🌐 ' + opponentName;
+            document.getElementById('statusBar').textContent = '⚽ Онлайн матч!';
 
             // Запускаем получение состояния
             startMatchSync();
 
-            setTimeout(() => { startGame('online'); }, 500);
+            // Сразу получаем состояние
+            setTimeout(() => {
+                apiGet('/api/match/state/' + matchId).then(r => {
+                    if (!r.error) {
+                        homeScore = r.score?.home || 0;
+                        awayScore = r.score?.away || 0;
+                        document.getElementById('score-display').textContent = homeScore + ' : ' + awayScore;
+                        localPlayers = {};
+                        for (let name in r.players) {
+                            const p = r.players[name];
+                            localPlayers[name] = {
+                                x: p.x || 0,
+                                y: p.y || 0,
+                                team: p.team || 'home',
+                                hasBall: p.hasBall || false,
+                                name: name,
+                                isPlayer: name === playerName
+                            };
+                        }
+                        if (r.ball) {
+                            localBall = { x: r.ball.x || 600, y: r.ball.y || 350 };
+                        }
+                    }
+                });
+            }, 100);
+
+            gameState = 'playing';
+            document.getElementById('menu-container').style.display = 'none';
         }
 
         // ============================================================
@@ -650,7 +690,7 @@
         function startMatchSync() {
             if (updateInterval) clearInterval(updateInterval);
             updateInterval = setInterval(async () => {
-                if (!matchId || gameState !== 'playing') {
+                if (!matchId) {
                     clearInterval(updateInterval);
                     updateInterval = null;
                     return;
@@ -868,6 +908,7 @@
             matchId = null;
             isOnline = false;
             matchFinished = true;
+            isMatchStarted = false;
 
             if (updateInterval) { clearInterval(updateInterval);
                 updateInterval = null; }
@@ -901,11 +942,12 @@
             updateUI();
             setupJoystick();
             setupButtons();
-            gameLoop();
 
             console.log('🚀 Игра загружена!');
             console.log('🌐 Сервер:', SERVER_URL);
             console.log('👤 Игрок:', playerName || 'Гость');
+
+            gameLoop();
         };
 
         function resizeCanvas() {
@@ -954,37 +996,6 @@
 
             if (state.status === 'finished') {
                 endMatch();
-            }
-        }
-
-        function startGame(type) {
-            isOnline = type === 'online';
-            gameState = 'playing';
-            document.getElementById('menu-container').style.display = 'none';
-            document.getElementById('joystick-area').style.display = 'block';
-            document.getElementById('action-buttons').style.display = 'flex';
-            document.getElementById('score-display').style.display = 'block';
-            document.getElementById('timer-display').style.display = 'block';
-            document.getElementById('statusBar').style.display = 'block';
-            document.getElementById('ratingDisplay').style.display = 'block';
-            document.getElementById('exit-match-btn').style.display = 'block';
-
-            if (isOnline) {
-                document.getElementById('online-status').style.display = 'block';
-                document.getElementById('online-status').textContent = '🌐 ' + opponentName;
-                document.getElementById('statusBar').textContent = '⚽ Онлайн матч!';
-            }
-
-            homeScore = 0;
-            awayScore = 0;
-            gameTime = 0;
-            matchFinished = false;
-            document.getElementById('score-display').textContent = '0 : 0';
-
-            if (isOnline && matchId) {
-                apiGet('/api/match/state/' + matchId).then(r => {
-                    if (!r.error) updateGameFromState(r);
-                });
             }
         }
 
@@ -1141,6 +1152,7 @@
                 document.getElementById('statusBar').style.display = 'none';
                 document.getElementById('online-status').style.display = 'none';
                 isOnline = false;
+                isMatchStarted = false;
                 updateUI();
             }, 2500);
         }
@@ -1153,9 +1165,10 @@
             setTimeout(() => { el.style.display = 'none'; }, 2500);
         }
 
-        console.log('⚽ STREET FOOTBALL 1x1 v24.0 загружена! (БЕЗ WEBSOCKET)');
+        console.log('⚽ STREET FOOTBALL 1x1 v25.0 загружена!');
         console.log('🌐 Сервер:', SERVER_URL);
         console.log('👤 Игрок:', playerName || 'Гость');
+        console.log('⚡ ВТОРОЙ ИГРОК ТЕПЕРЬ ВИДИТ ПОЛЕ!');
     </script>
 </body>
 </html>
