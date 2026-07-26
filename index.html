@@ -5,18 +5,802 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>⚽ STREET FOOTBALL - ОНЛАЙН</title>
     <style>
-        /* ===== ВЕСЬ СТИЛЬ ТОТ ЖЕ, ЧТО В ПРЕДЫДУЩЕЙ ВЕРСИИ ===== */
-        /* (возьми из предыдущего сообщения) */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            touch-action: none;
+            user-select: none;
+            -webkit-touch-callout: none;
+        }
+        body {
+            background: #0d1b2a;
+            overflow: hidden;
+            font-family: Arial, sans-serif;
+            position: fixed;
+            width: 100%;
+            height: 100%;
+            color: white;
+        }
+        canvas {
+            display: block;
+            width: 100vw;
+            height: 100vh;
+            background: #1b4332;
+        }
+        #ui-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 10;
+        }
+        .btn {
+            pointer-events: auto;
+            background: rgba(60, 60, 80, 0.85);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            font-size: 14px;
+            font-weight: bold;
+            padding: 10px 16px;
+            border-radius: 10px;
+            cursor: pointer;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            transition: all 0.2s;
+            touch-action: manipulation;
+            width: 100%;
+            text-align: center;
+        }
+        .btn:active {
+            transform: scale(0.95);
+        }
+        .btn-blue {
+            background: rgba(50, 100, 255, 0.7);
+            border-color: #4d7aff;
+        }
+        .btn-red {
+            background: rgba(200, 50, 50, 0.7);
+            border-color: #ff6b6b;
+        }
+        .btn-green {
+            background: rgba(0, 200, 100, 0.7);
+            border-color: #51cf66;
+        }
+        .btn-gray {
+            background: rgba(100, 100, 120, 0.7);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+        .btn-orange {
+            background: rgba(255, 150, 50, 0.7);
+            border-color: #ffa94d;
+        }
+        #menu-container {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            pointer-events: none;
+            width: 94%;
+            max-width: 440px;
+            max-height: 95vh;
+            overflow-y: auto;
+        }
+        #menu-container .title {
+            color: white;
+            font-size: 28px;
+            font-weight: bold;
+            text-shadow: 0 0 30px rgba(0, 0, 0, 0.8);
+            margin-bottom: 6px;
+        }
+        #menu-container .subtitle {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 12px;
+            margin-bottom: 10px;
+        }
+        .btn-full {
+            margin: 4px 0;
+            padding: 10px;
+            font-size: 14px;
+        }
+        #score-display {
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: white;
+            font-size: 24px;
+            font-weight: bold;
+            text-shadow: 0 0 20px rgba(0, 0, 0, 0.8);
+            background: rgba(0, 0, 0, 0.6);
+            padding: 3px 16px;
+            border-radius: 10px;
+            pointer-events: none;
+            z-index: 20;
+            display: none;
+        }
+        #timer-display {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            color: white;
+            font-size: 16px;
+            font-weight: bold;
+            text-shadow: 0 0 20px rgba(0, 0, 0, 0.8);
+            background: rgba(0, 0, 0, 0.5);
+            padding: 3px 10px;
+            border-radius: 8px;
+            pointer-events: none;
+            z-index: 20;
+            display: none;
+        }
+        #statusBar {
+            position: absolute;
+            top: 52px;
+            left: 10px;
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 10px;
+            pointer-events: none;
+            z-index: 10;
+            background: rgba(0, 0, 0, 0.4);
+            padding: 2px 8px;
+            border-radius: 6px;
+            display: none;
+        }
+        #ratingDisplay {
+            position: absolute;
+            top: 52px;
+            right: 10px;
+            color: #ffd700;
+            font-size: 12px;
+            font-weight: bold;
+            pointer-events: none;
+            z-index: 10;
+            background: rgba(0, 0, 0, 0.4);
+            padding: 2px 8px;
+            border-radius: 6px;
+            display: none;
+        }
+        #online-status {
+            position: absolute;
+            top: 52px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: #51cf66;
+            font-size: 11px;
+            font-weight: bold;
+            pointer-events: none;
+            z-index: 10;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 2px 12px;
+            border-radius: 6px;
+            display: none;
+        }
+        #joystick-area {
+            position: absolute;
+            bottom: 80px;
+            left: 20px;
+            width: 130px;
+            height: 130px;
+            pointer-events: auto;
+            z-index: 30;
+            display: none;
+            touch-action: none;
+        }
+        #joystick-base {
+            position: absolute;
+            width: 130px;
+            height: 130px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.12);
+            border: 3px solid rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            box-shadow: 0 0 40px rgba(0, 0, 0, 0.3);
+        }
+        #joystick-thumb {
+            position: absolute;
+            width: 55px;
+            height: 55px;
+            border-radius: 50%;
+            background: radial-gradient(circle at 40% 35%, rgba(255, 255, 255, 0.6), rgba(200, 200, 200, 0.3));
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 0 30px rgba(255, 255, 255, 0.1);
+            transition: none;
+            pointer-events: none;
+        }
+        #joystick-center-dot {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+        }
+        #action-buttons {
+            position: absolute;
+            bottom: 80px;
+            right: 20px;
+            display: none;
+            flex-direction: column;
+            gap: 10px;
+            pointer-events: none;
+            z-index: 30;
+        }
+        .action-btn {
+            pointer-events: auto;
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            font-size: 13px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+            touch-action: manipulation;
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        }
+        .action-btn:active {
+            transform: scale(0.92);
+        }
+        .btn-shoot {
+            background: radial-gradient(circle at 40% 35%, rgba(255, 80, 80, 0.8), rgba(200, 30, 30, 0.6));
+            border-color: rgba(255, 100, 100, 0.5);
+        }
+        .btn-pass {
+            background: radial-gradient(circle at 40% 35%, rgba(80, 255, 80, 0.8), rgba(30, 200, 30, 0.6));
+            border-color: rgba(100, 255, 100, 0.5);
+        }
+        .btn-tackle {
+            background: radial-gradient(circle at 40% 35%, rgba(80, 80, 255, 0.8), rgba(30, 30, 200, 0.6));
+            border-color: rgba(100, 100, 255, 0.5);
+        }
+        #message {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-size: 26px;
+            font-weight: bold;
+            text-shadow: 0 0 30px rgba(0, 0, 0, 0.9);
+            background: rgba(0, 0, 0, 0.8);
+            padding: 14px 28px;
+            border-radius: 14px;
+            pointer-events: none;
+            z-index: 40;
+            display: none;
+            text-align: center;
+            max-width: 90%;
+        }
+        #lobby-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            z-index: 95;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        #lobby-container {
+            background: rgba(13, 27, 42, 0.95);
+            border-radius: 20px;
+            padding: 20px;
+            width: 100%;
+            max-width: 460px;
+            max-height: 90vh;
+            overflow-y: auto;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 0 60px rgba(0, 0, 0, 0.5);
+        }
+        #lobby-container h2 {
+            color: #ffd700;
+            text-align: center;
+            margin-bottom: 8px;
+            font-size: 20px;
+        }
+        .lobby-info {
+            text-align: center;
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.6);
+            margin-bottom: 12px;
+        }
+        .lobby-players {
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 10px;
+            padding: 10px;
+            margin-bottom: 12px;
+        }
+        .lobby-player {
+            padding: 6px 10px;
+            margin: 3px 0;
+            border-radius: 6px;
+            background: rgba(255, 255, 255, 0.05);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .lobby-player .host-badge {
+            color: #ffd700;
+            font-size: 11px;
+        }
+        .lobby-player .ready-badge {
+            color: #51cf66;
+            font-size: 11px;
+        }
+        .lobby-player .waiting-badge {
+            color: rgba(255, 255, 255, 0.3);
+            font-size: 11px;
+        }
+        #create-lobby-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            z-index: 92;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        #create-lobby-container {
+            background: rgba(13, 27, 42, 0.95);
+            border-radius: 20px;
+            padding: 20px;
+            width: 100%;
+            max-width: 460px;
+            max-height: 90vh;
+            overflow-y: auto;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 0 60px rgba(0, 0, 0, 0.5);
+        }
+        #create-lobby-container h2 {
+            color: #ffd700;
+            text-align: center;
+            margin-bottom: 12px;
+            font-size: 20px;
+        }
+        #create-lobby-container input {
+            width: 100%;
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.06);
+            color: white;
+            font-size: 14px;
+            pointer-events: auto;
+            outline: none;
+        }
+        #create-lobby-container input::placeholder {
+            color: rgba(255, 255, 255, 0.25);
+        }
+        #create-lobby-container input:focus {
+            border-color: #ffd700;
+        }
+        .mode-select {
+            display: flex;
+            gap: 10px;
+            margin: 10px 0;
+        }
+        .mode-select .btn {
+            flex: 1;
+            padding: 8px;
+            font-size: 13px;
+        }
+        .mode-select .btn.active {
+            background: rgba(255, 215, 0, 0.3) !important;
+            border-color: #ffd700 !important;
+        }
+        #find-lobby-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            z-index: 93;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        #find-lobby-container {
+            background: rgba(13, 27, 42, 0.95);
+            border-radius: 20px;
+            padding: 20px;
+            width: 100%;
+            max-width: 460px;
+            max-height: 90vh;
+            overflow-y: auto;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 0 60px rgba(0, 0, 0, 0.5);
+        }
+        #find-lobby-container h2 {
+            color: #4d7aff;
+            text-align: center;
+            margin-bottom: 12px;
+            font-size: 20px;
+        }
+        .lobby-item {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            padding: 12px;
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .lobby-item .lobby-info-text {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+        }
+        .lobby-item .lobby-name {
+            font-weight: bold;
+            font-size: 14px;
+        }
+        .lobby-item .lobby-desc {
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.4);
+        }
+        .lobby-item .join-btn {
+            background: rgba(81, 207, 102, 0.2);
+            border: 1px solid rgba(81, 207, 102, 0.3);
+            border-radius: 8px;
+            padding: 6px 16px;
+            color: #51cf66;
+            font-weight: bold;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            pointer-events: auto !important;
+            z-index: 100;
+        }
+        .lobby-item .join-btn:active {
+            transform: scale(0.95);
+            background: rgba(81, 207, 102, 0.4);
+        }
+        .refresh-btn {
+            margin-bottom: 10px;
+        }
+        #online-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            z-index: 90;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        #online-container {
+            background: rgba(13, 27, 42, 0.95);
+            border-radius: 20px;
+            padding: 20px;
+            width: 100%;
+            max-width: 460px;
+            max-height: 90vh;
+            overflow-y: auto;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 0 60px rgba(0, 0, 0, 0.5);
+        }
+        #online-container h2 {
+            color: #4d7aff;
+            text-align: center;
+            margin-bottom: 8px;
+            font-size: 22px;
+        }
+        .online-status-text {
+            text-align: center;
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.5);
+            margin-bottom: 12px;
+            min-height: 24px;
+        }
+        .online-btn {
+            margin: 4px 0;
+        }
+        .close-online {
+            margin-top: 12px;
+        }
+        #login-container {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(13, 27, 42, 0.95);
+            border-radius: 16px;
+            padding: 20px;
+            width: 92%;
+            max-width: 380px;
+            z-index: 60;
+            pointer-events: auto;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            display: none;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        #login-container h2 {
+            color: white;
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 18px;
+        }
+        #login-container input {
+            width: 100%;
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.06);
+            color: white;
+            font-size: 14px;
+            pointer-events: auto;
+            outline: none;
+        }
+        #login-container input::placeholder {
+            color: rgba(255, 255, 255, 0.25);
+        }
+        #login-container input:focus {
+            border-color: #ffd700;
+        }
+        #login-container .btn {
+            margin: 3px 0;
+        }
+        #loginMsg {
+            text-align: center;
+            margin-top: 6px;
+            font-size: 12px;
+            min-height: 18px;
+        }
+        .login-success {
+            color: #51cf66 !important;
+        }
+        .login-error {
+            color: #ff6b6b !important;
+        }
+        #exit-match-btn {
+            position: absolute;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 200px;
+            z-index: 50;
+            display: none;
+        }
+        @media(max-width:600px) {
+            #joystick-area {
+                width: 110px;
+                height: 110px;
+                bottom: 60px;
+                left: 15px;
+            }
+            #joystick-base {
+                width: 110px;
+                height: 110px;
+            }
+            #joystick-thumb {
+                width: 45px;
+                height: 45px;
+            }
+            .action-btn {
+                width: 58px;
+                height: 58px;
+                font-size: 11px;
+            }
+            #action-buttons {
+                gap: 8px;
+                bottom: 60px;
+                right: 15px;
+            }
+            #menu-container .title {
+                font-size: 22px;
+            }
+            #score-display {
+                font-size: 20px;
+                padding: 2px 12px;
+            }
+            .btn {
+                font-size: 11px;
+                padding: 8px 10px;
+            }
+            .lobby-item {
+                flex-wrap: wrap;
+                gap: 8px;
+            }
+            .lobby-item .join-btn {
+                width: 100%;
+                text-align: center;
+            }
+            #exit-match-btn {
+                width: 150px;
+                font-size: 12px;
+                padding: 8px;
+            }
+        }
+        @media(max-width:400px) {
+            #joystick-area {
+                width: 90px;
+                height: 90px;
+                bottom: 50px;
+                left: 10px;
+            }
+            #joystick-base {
+                width: 90px;
+                height: 90px;
+            }
+            #joystick-thumb {
+                width: 38px;
+                height: 38px;
+            }
+            .action-btn {
+                width: 50px;
+                height: 50px;
+                font-size: 10px;
+            }
+            #action-buttons {
+                gap: 6px;
+                bottom: 50px;
+                right: 10px;
+            }
+            #score-display {
+                font-size: 16px;
+                padding: 2px 10px;
+            }
+            #timer-display {
+                font-size: 13px;
+                padding: 2px 8px;
+            }
+            .btn {
+                font-size: 10px;
+                padding: 6px 8px;
+            }
+            #exit-match-btn {
+                width: 120px;
+                font-size: 10px;
+                padding: 6px;
+            }
+        }
     </style>
 </head>
 <body>
+
+    <!-- ===== CANVAS ===== -->
     <canvas id="gameCanvas"></canvas>
-    <!-- ===== ВЕСЬ HTML ТОТ ЖЕ ===== -->
-    <!-- (возьми из предыдущего сообщения) -->
+
+    <div id="ui-overlay">
+        <div id="score-display">0 : 0</div>
+        <div id="timer-display">⏱️ 5:00</div>
+        <div id="statusBar">⚽ Добро пожаловать!</div>
+        <div id="ratingDisplay">⭐ 50</div>
+        <div id="online-status"></div>
+
+        <!-- ===== МЕНЮ ===== -->
+        <div id="menu-container">
+            <div class="title">⚽ STREET<br>FOOTBALL</div>
+            <div class="subtitle" id="playerInfo">👤 Гость | ⭐ 50 | 💎 100</div>
+            <button class="btn btn-orange btn-full" onclick="showOnlineUI()">🌐 ОНЛАЙН</button>
+            <div id="guestMenu">
+                <button class="btn btn-blue btn-full" onclick="showLogin()">🔑 Войти</button>
+                <button class="btn btn-blue btn-full" onclick="showRegister()">📝 Регистрация</button>
+            </div>
+        </div>
+
+        <!-- ===== ЛОГИН ===== -->
+        <div id="login-container">
+            <h2 id="loginTitle">🔑 Вход</h2>
+            <input type="text" id="loginName" placeholder="Имя игрока">
+            <input type="password" id="loginPass" placeholder="Пароль">
+            <button class="btn btn-blue" onclick="handleLogin()">✅ Войти</button>
+            <button class="btn btn-gray" onclick="closeLogin()">↩️ Назад</button>
+            <div id="loginMsg"></div>
+        </div>
+
+        <!-- ===== ОНЛАЙН ===== -->
+        <div id="online-overlay">
+            <div id="online-container">
+                <h2>🌐 ОНЛАЙН</h2>
+                <div class="online-status-text" id="online-status-text">⚡ Выберите действие</div>
+                <button class="btn btn-green online-btn" onclick="showCreateLobbyUI()">🏠 СОЗДАТЬ ЛОББИ</button>
+                <button class="btn btn-blue online-btn" onclick="showFindLobbyUI()">🔍 НАЙТИ ЛОББИ</button>
+                <button class="btn btn-gray" onclick="closeOnlineUI()">↩️ Назад</button>
+            </div>
+        </div>
+
+        <!-- ===== СОЗДАНИЕ ЛОББИ ===== -->
+        <div id="create-lobby-overlay">
+            <div id="create-lobby-container">
+                <h2>🏠 СОЗДАНИЕ ЛОББИ</h2>
+                <input type="text" id="lobbyNameInput" placeholder="Название лобби">
+                <div class="mode-select">
+                    <button class="btn active" onclick="selectLobbyMode('1x1', this)">⚔️ 1x1</button>
+                    <button class="btn" onclick="selectLobbyMode('2x2', this)">⚔️ 2x2</button>
+                </div>
+                <button class="btn btn-green" onclick="createLobby()">✅ СОЗДАТЬ</button>
+                <button class="btn btn-gray" onclick="closeCreateLobbyUI()">↩️ Назад</button>
+                <div id="create-lobby-msg"></div>
+            </div>
+        </div>
+
+        <!-- ===== ПОИСК ЛОББИ ===== -->
+        <div id="find-lobby-overlay">
+            <div id="find-lobby-container">
+                <h2>🔍 ПОИСК ЛОББИ</h2>
+                <button class="btn btn-blue refresh-btn" onclick="findLobbies()">🔄 Обновить</button>
+                <div id="lobby-list"></div>
+                <button class="btn btn-gray" onclick="closeFindLobbyUI()">↩️ Назад</button>
+            </div>
+        </div>
+
+        <!-- ===== ЛОББИ ===== -->
+        <div id="lobby-overlay">
+            <div id="lobby-container">
+                <h2 id="lobby-title">🏠 ЛОББИ</h2>
+                <div class="lobby-info" id="lobby-info">📊 Режим: 1x1</div>
+                <div class="lobby-players" id="lobby-players-list"></div>
+                <div class="lobby-info" id="lobby-status-text">⏳ Ожидание игроков...</div>
+                <button class="btn btn-green" id="lobby-start-btn" onclick="startOnlineMatch()" style="display:none;">▶️ НАЧАТЬ МАТЧ</button>
+                <button class="btn btn-red" onclick="leaveLobby()">🚪 ВЫЙТИ</button>
+                <div id="lobby-msg"></div>
+            </div>
+        </div>
+
+        <!-- ===== СООБЩЕНИЕ ===== -->
+        <div id="message"></div>
+
+        <!-- ===== УПРАВЛЕНИЕ ===== -->
+        <div id="joystick-area">
+            <div id="joystick-base">
+                <div id="joystick-thumb"></div>
+                <div id="joystick-center-dot"></div>
+            </div>
+        </div>
+
+        <div id="action-buttons">
+            <button class="action-btn btn-shoot" id="btn-shoot">⚽<br>Удар</button>
+            <button class="action-btn btn-pass" id="btn-pass">🎯<br>Пас</button>
+            <button class="action-btn btn-tackle" id="btn-tackle">🛡️<br>Отбор</button>
+        </div>
+
+        <button class="btn btn-red" id="exit-match-btn" onclick="leaveMatch()">🚪 ВЫЙТИ ИЗ МАТЧА</button>
+    </div>
 
     <script>
         // ============================================================
-        // ==================== КЛИЕНТ (ИСПРАВЛЕННЫЙ) =================
+        // ==================== ВСЯ ЛОГИКА ============================
         // ============================================================
 
         const SERVER_URL = 'https://machcup-mobile-server.onrender.com';
@@ -47,6 +831,7 @@
         let matchFinished = false;
         let syncInterval = null;
         let lastActionTime = 0;
+        let socket = null;
 
         // ============================================================
         // ==================== API ====================================
@@ -77,8 +862,6 @@
         // ============================================================
         // ==================== WEBSOCKET =============================
         // ============================================================
-
-        let socket = null;
 
         function initSocket() {
             try {
@@ -153,14 +936,19 @@
 
         function updateUI() {
             const info = document.getElementById('playerInfo');
+            if (!info) return;
+
             if (playerName) {
                 info.textContent = '👤 ' + playerName + ' | ⭐ ' + playerRating + ' | 💎 ' + playerCrystals;
-                document.getElementById('guestMenu').style.display = 'none';
+                const guestMenu = document.getElementById('guestMenu');
+                if (guestMenu) guestMenu.style.display = 'none';
             } else {
                 info.textContent = '👤 Гость | ⭐ 50 | 💎 100';
-                document.getElementById('guestMenu').style.display = 'block';
+                const guestMenu = document.getElementById('guestMenu');
+                if (guestMenu) guestMenu.style.display = 'block';
             }
-            document.getElementById('ratingDisplay').textContent = '⭐ ' + playerRating;
+            const ratingDisplay = document.getElementById('ratingDisplay');
+            if (ratingDisplay) ratingDisplay.textContent = '⭐ ' + playerRating;
         }
 
         // ============================================================
@@ -169,24 +957,32 @@
 
         function showOnlineUI() {
             if (!playerName) { showMessage('❌ Сначала войдите!'); return; }
-            document.getElementById('online-overlay').style.display = 'flex';
+            const el = document.getElementById('online-overlay');
+            if (el) el.style.display = 'flex';
         }
 
         function closeOnlineUI() {
-            document.getElementById('online-overlay').style.display = 'none';
+            const el = document.getElementById('online-overlay');
+            if (el) el.style.display = 'none';
         }
 
         function showCreateLobbyUI() {
             closeOnlineUI();
-            document.getElementById('create-lobby-overlay').style.display = 'flex';
-            document.getElementById('lobbyNameInput').value = 'Лобби ' + playerName;
+            const el = document.getElementById('create-lobby-overlay');
+            if (el) el.style.display = 'flex';
+            const input = document.getElementById('lobbyNameInput');
+            if (input) input.value = 'Лобби ' + playerName;
+            const msg = document.getElementById('create-lobby-msg');
+            if (msg) msg.textContent = '';
             document.querySelectorAll('#create-lobby-container .mode-select .btn').forEach(b => b.classList.remove('active'));
-            document.querySelector('#create-lobby-container .mode-select .btn:first-child').classList.add('active');
+            const first = document.querySelector('#create-lobby-container .mode-select .btn:first-child');
+            if (first) first.classList.add('active');
             lobbyMode = '1x1';
         }
 
         function closeCreateLobbyUI() {
-            document.getElementById('create-lobby-overlay').style.display = 'none';
+            const el = document.getElementById('create-lobby-overlay');
+            if (el) el.style.display = 'none';
             showOnlineUI();
         }
 
@@ -198,22 +994,26 @@
 
         function showFindLobbyUI() {
             closeOnlineUI();
-            document.getElementById('find-lobby-overlay').style.display = 'flex';
+            const el = document.getElementById('find-lobby-overlay');
+            if (el) el.style.display = 'flex';
             findLobbies();
         }
 
         function closeFindLobbyUI() {
-            document.getElementById('find-lobby-overlay').style.display = 'none';
+            const el = document.getElementById('find-lobby-overlay');
+            if (el) el.style.display = 'none';
             showOnlineUI();
         }
 
         function showLobbyUI() {
-            document.getElementById('lobby-overlay').style.display = 'flex';
+            const el = document.getElementById('lobby-overlay');
+            if (el) el.style.display = 'flex';
             updateLobbyUI();
         }
 
         function closeLobbyUI() {
-            document.getElementById('lobby-overlay').style.display = 'none';
+            const el = document.getElementById('lobby-overlay');
+            if (el) el.style.display = 'none';
         }
 
         // ============================================================
@@ -221,31 +1021,47 @@
         // ============================================================
 
         function showLogin() {
-            document.getElementById('login-container').style.display = 'block';
-            document.getElementById('loginTitle').textContent = '🔑 Вход';
-            document.getElementById('loginMsg').textContent = '';
-            document.getElementById('loginMsg').className = '';
-            document.getElementById('loginName').value = '';
-            document.getElementById('loginPass').value = '';
+            const el = document.getElementById('login-container');
+            if (el) el.style.display = 'block';
+            const title = document.getElementById('loginTitle');
+            if (title) title.textContent = '🔑 Вход';
+            const msg = document.getElementById('loginMsg');
+            if (msg) { msg.textContent = '';
+                msg.className = ''; }
+            const name = document.getElementById('loginName');
+            if (name) name.value = '';
+            const pass = document.getElementById('loginPass');
+            if (pass) pass.value = '';
         }
 
         function showRegister() {
-            document.getElementById('login-container').style.display = 'block';
-            document.getElementById('loginTitle').textContent = '📝 Регистрация';
-            document.getElementById('loginMsg').textContent = '';
-            document.getElementById('loginMsg').className = '';
-            document.getElementById('loginName').value = '';
-            document.getElementById('loginPass').value = '';
+            const el = document.getElementById('login-container');
+            if (el) el.style.display = 'block';
+            const title = document.getElementById('loginTitle');
+            if (title) title.textContent = '📝 Регистрация';
+            const msg = document.getElementById('loginMsg');
+            if (msg) { msg.textContent = '';
+                msg.className = ''; }
+            const name = document.getElementById('loginName');
+            if (name) name.value = '';
+            const pass = document.getElementById('loginPass');
+            if (pass) pass.value = '';
         }
 
         function closeLogin() {
-            document.getElementById('login-container').style.display = 'none';
+            const el = document.getElementById('login-container');
+            if (el) el.style.display = 'none';
         }
 
         async function handleLogin() {
-            const name = document.getElementById('loginName').value.trim();
-            const pass = document.getElementById('loginPass').value.trim();
+            const nameInput = document.getElementById('loginName');
+            const passInput = document.getElementById('loginPass');
             const msg = document.getElementById('loginMsg');
+
+            if (!nameInput || !passInput || !msg) return;
+
+            const name = nameInput.value.trim();
+            const pass = passInput.value.trim();
 
             if (!name || !pass) {
                 msg.textContent = '❌ Заполните все поля!';
@@ -253,7 +1069,8 @@
                 return;
             }
 
-            const isRegister = document.getElementById('loginTitle').textContent.includes('Регистрация');
+            const title = document.getElementById('loginTitle');
+            const isRegister = title ? title.textContent.includes('Регистрация') : false;
             const result = await apiCall(isRegister ? '/api/register' : '/api/login', { name, password: pass });
 
             if (result.error) {
@@ -275,8 +1092,8 @@
 
             setTimeout(() => {
                 closeLogin();
-                document.getElementById('loginMsg').textContent = '';
-                document.getElementById('loginMsg').className = '';
+                if (msg) { msg.textContent = '';
+                    msg.className = ''; }
                 showMessage('👋 Добро пожаловать, ' + playerName + '!');
             }, 1000);
         }
@@ -286,7 +1103,8 @@
         // ============================================================
 
         async function createLobby() {
-            const lobbyName = document.getElementById('lobbyNameInput').value.trim() || 'Лобби ' + playerName;
+            const input = document.getElementById('lobbyNameInput');
+            const lobbyName = input ? input.value.trim() || 'Лобби ' + playerName : 'Лобби ' + playerName;
             if (!playerName) { showMessage('❌ Войдите в аккаунт!'); return; }
 
             const result = await apiCall('/api/lobby/create', {
@@ -418,52 +1236,59 @@
 
             const lobby = result;
 
-            document.getElementById('lobby-title').textContent = '🏠 ' + lobby.name;
-            document.getElementById('lobby-info').textContent = '📊 ' + lobby.mode;
+            const title = document.getElementById('lobby-title');
+            if (title) title.textContent = '🏠 ' + lobby.name;
+            const info = document.getElementById('lobby-info');
+            if (info) info.textContent = '📊 ' + lobby.mode;
 
-            let playersHtml = '';
-            lobby.players.forEach(p => {
-                const isHostPlayer = p === lobby.host;
-                const isMe = p === playerName;
-                playersHtml += `
-                    <div class="lobby-player" style="${isMe ? 'border-left: 3px solid #ffd700;' : ''}">
-                        <span>${p} ${isHostPlayer ? '👑' : ''} ${isMe ? ' (Вы)' : ''}</span>
-                        <span class="${isHostPlayer ? 'host-badge' : 'ready-badge'}">
-                            ${isHostPlayer ? 'Хост' : '✅ Готов'}
-                        </span>
-                    </div>
-                `;
-            });
+            const playersList = document.getElementById('lobby-players-list');
+            if (playersList) {
+                let playersHtml = '';
+                lobby.players.forEach(p => {
+                    const isHostPlayer = p === lobby.host;
+                    const isMe = p === playerName;
+                    playersHtml += `
+                        <div class="lobby-player" style="${isMe ? 'border-left: 3px solid #ffd700;' : ''}">
+                            <span>${p} ${isHostPlayer ? '👑' : ''} ${isMe ? ' (Вы)' : ''}</span>
+                            <span class="${isHostPlayer ? 'host-badge' : 'ready-badge'}">
+                                ${isHostPlayer ? 'Хост' : '✅ Готов'}
+                            </span>
+                        </div>
+                    `;
+                });
 
-            const emptySlots = 2 - lobby.players.length;
-            for (let i = 0; i < emptySlots; i++) {
-                playersHtml += `
-                    <div class="lobby-player">
-                        <span style="color:rgba(255,255,255,0.2);">🔲 Свободно</span>
-                        <span class="waiting-badge">Ожидание...</span>
-                    </div>
-                `;
+                const emptySlots = 2 - lobby.players.length;
+                for (let i = 0; i < emptySlots; i++) {
+                    playersHtml += `
+                        <div class="lobby-player">
+                            <span style="color:rgba(255,255,255,0.2);">🔲 Свободно</span>
+                            <span class="waiting-badge">Ожидание...</span>
+                        </div>
+                    `;
+                }
+                playersList.innerHTML = playersHtml;
             }
-            document.getElementById('lobby-players-list').innerHTML = playersHtml;
 
             const statusText = document.getElementById('lobby-status-text');
             const startBtn = document.getElementById('lobby-start-btn');
 
             if (lobby.status === 'playing') {
-                statusText.textContent = '⚽ Матч идёт...';
-                startBtn.style.display = 'none';
+                if (statusText) statusText.textContent = '⚽ Матч идёт...';
+                if (startBtn) startBtn.style.display = 'none';
             } else if (lobby.players.length >= 2) {
-                statusText.textContent = '✅ Все готовы!';
-                if (isHost) {
-                    startBtn.style.display = 'block';
-                    startBtn.textContent = '▶️ НАЧАТЬ МАТЧ';
-                } else {
-                    startBtn.style.display = 'none';
-                    statusText.textContent = '⏳ Ожидание хоста...';
+                if (statusText) statusText.textContent = '✅ Все готовы!';
+                if (startBtn) {
+                    if (isHost) {
+                        startBtn.style.display = 'block';
+                        startBtn.textContent = '▶️ НАЧАТЬ МАТЧ';
+                    } else {
+                        startBtn.style.display = 'none';
+                        if (statusText) statusText.textContent = '⏳ Ожидание хоста...';
+                    }
                 }
             } else {
-                statusText.textContent = '⏳ Ожидание игроков... (' + lobby.players.length + '/2)';
-                startBtn.style.display = 'none';
+                if (statusText) statusText.textContent = '⏳ Ожидание игроков... (' + lobby.players.length + '/2)';
+                if (startBtn) startBtn.style.display = 'none';
             }
         }
 
@@ -522,6 +1347,7 @@
             document.getElementById('timer-display').style.display = 'none';
             document.getElementById('statusBar').style.display = 'none';
             document.getElementById('online-status').style.display = 'none';
+            document.getElementById('exit-match-btn').style.display = 'none';
             updateUI();
             showMessage('🚪 Вы вышли из матча');
         }
@@ -532,7 +1358,16 @@
 
         window.onload = function() {
             canvas = document.getElementById('gameCanvas');
+            if (!canvas) {
+                console.error('❌ Canvas не найден!');
+                return;
+            }
             ctx = canvas.getContext('2d');
+            if (!ctx) {
+                console.error('❌ Не удалось получить контекст!');
+                return;
+            }
+
             resizeCanvas();
             window.addEventListener('resize', resizeCanvas);
             loadSave();
@@ -542,7 +1377,10 @@
             setupActionButtons();
             setupKeyboard();
             gameLoop();
+
             console.log('🚀 Игра загружена!');
+            console.log('🌐 Сервер:', SERVER_URL);
+            console.log('👤 Игрок:', playerName || 'Гость');
         };
 
         function resizeCanvas() {
@@ -556,6 +1394,8 @@
             const base = document.getElementById('joystick-base');
             const thumb = document.getElementById('joystick-thumb');
             const area = document.getElementById('joystick-area');
+
+            if (!base || !thumb || !area) return;
 
             let touchId = null;
 
@@ -620,31 +1460,25 @@
 
         // ---- КНОПКИ ----
         function setupActionButtons() {
-            document.getElementById('btn-shoot').addEventListener('touchstart', e => { e.preventDefault();
-                sendAction('shoot', { target_x: 1150, target_y: 350 }); });
-            document.getElementById('btn-shoot').addEventListener('mousedown', () => sendAction('shoot', { target_x: 1150,
-                target_y: 350 }));
-            document.getElementById('btn-pass').addEventListener('touchstart', e => { e.preventDefault();
-                sendAction('pass', {}); });
-            document.getElementById('btn-pass').addEventListener('mousedown', () => sendAction('pass', {}));
-            document.getElementById('btn-tackle').addEventListener('touchstart', e => { e.preventDefault();
-                sendAction('tackle', {}); });
-            document.getElementById('btn-tackle').addEventListener('mousedown', () => sendAction('tackle', {}));
+            const shootBtn = document.getElementById('btn-shoot');
+            const passBtn = document.getElementById('btn-pass');
+            const tackleBtn = document.getElementById('btn-tackle');
 
-            // Кнопка выхода из матча (добавляем динамически)
-            const exitBtn = document.createElement('button');
-            exitBtn.className = 'btn btn-red';
-            exitBtn.textContent = '🚪 ВЫЙТИ ИЗ МАТЧА';
-            exitBtn.style.position = 'absolute';
-            exitBtn.style.bottom = '10px';
-            exitBtn.style.left = '50%';
-            exitBtn.style.transform = 'translateX(-50%)';
-            exitBtn.style.width = '200px';
-            exitBtn.style.zIndex = '50';
-            exitBtn.style.display = 'none';
-            exitBtn.id = 'exit-match-btn';
-            exitBtn.onclick = leaveMatch;
-            document.getElementById('ui-overlay').appendChild(exitBtn);
+            if (shootBtn) {
+                shootBtn.addEventListener('touchstart', e => { e.preventDefault();
+                    sendAction('shoot', { target_x: 1150, target_y: 350 }); });
+                shootBtn.addEventListener('mousedown', () => sendAction('shoot', { target_x: 1150, target_y: 350 }));
+            }
+            if (passBtn) {
+                passBtn.addEventListener('touchstart', e => { e.preventDefault();
+                    sendAction('pass', {}); });
+                passBtn.addEventListener('mousedown', () => sendAction('pass', {}));
+            }
+            if (tackleBtn) {
+                tackleBtn.addEventListener('touchstart', e => { e.preventDefault();
+                    sendAction('tackle', {}); });
+                tackleBtn.addEventListener('mousedown', () => sendAction('tackle', {}));
+            }
         }
 
         // ---- КЛАВИАТУРА ----
@@ -698,7 +1532,8 @@
             if (state.score) {
                 homeScore = state.score.home || 0;
                 awayScore = state.score.away || 0;
-                document.getElementById('score-display').textContent = homeScore + ' : ' + awayScore;
+                const scoreDisplay = document.getElementById('score-display');
+                if (scoreDisplay) scoreDisplay.textContent = homeScore + ' : ' + awayScore;
             }
 
             if (state.time !== undefined) {
@@ -706,7 +1541,8 @@
                 const remaining = Math.max(0, 300 - gameTime);
                 const mins = Math.floor(remaining / 60);
                 const secs = Math.floor(remaining % 60);
-                document.getElementById('timer-display').textContent = '⏱️ ' + mins + ':' + String(secs).padStart(2, '0');
+                const timerDisplay = document.getElementById('timer-display');
+                if (timerDisplay) timerDisplay.textContent = '⏱️ ' + mins + ':' + String(secs).padStart(2, '0');
             }
 
             if (state.players) {
@@ -933,12 +1769,13 @@
 
         function showMessage(text) {
             const el = document.getElementById('message');
+            if (!el) return;
             el.textContent = text;
             el.style.display = 'block';
             setTimeout(() => { el.style.display = 'none'; }, 2500);
         }
 
-        console.log('⚽ STREET FOOTBALL ONLINE v20.0 загружена!');
+        console.log('⚽ STREET FOOTBALL ONLINE v21.0 загружена!');
         console.log('🌐 Сервер:', SERVER_URL);
         console.log('👤 Игрок:', playerName || 'Гость');
     </script>
