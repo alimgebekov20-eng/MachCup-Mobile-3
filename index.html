@@ -6,7 +6,7 @@
     <title>⚽ STREET FOOTBALL - ОНЛАЙН</title>
     <style>
         /* ============================================================
-                   СТИЛИ
+                   СТИЛИ (полные)
                    ============================================================ */
         * {
             margin: 0;
@@ -771,7 +771,7 @@
 
     <script>
         // ============================================================
-        // ==================== ВСЯ ИГРА (3000+ СТРОК) ================
+        // ==================== КЛИЕНТ (3000+ СТРОК) ===================
         // ============================================================
 
         // ---- КОНСТАНТЫ ----
@@ -784,6 +784,9 @@
         const MATCH_TIME = 300;
         const PLAYER_SPEED = 2.2;
         const BOT_SPEED_BASE = 1.8;
+
+        // ---- СЕРВЕР ----
+        const SERVER_URL = 'https://machcup-mobile-server.onrender.com';
 
         // ---- ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ----
         let canvas, ctx;
@@ -801,121 +804,87 @@
         let isOnline = false;
         let opponentName = '';
         let syncInterval = null;
-        let lobbiesCache = {};
+        let socket = null;
+        let isSubscribed = false;
 
         // ---- API ----
-        const SERVER_URL = 'https://machcup-mobile-server.onrender.com';
-
-        // ---- ФУНКЦИИ ДЛЯ РАБОТЫ С ЛОББИ (3 СПОСОБА СИНХРОНИЗАЦИИ) ----
-
-        // 1. LOCALSTORAGE - быстро, надёжно, работает между вкладками
-        function getLobbiesFromStorage() {
+        async function apiCall(endpoint, data) {
             try {
-                return JSON.parse(localStorage.getItem('online_lobbies') || '{}');
-            } catch (e) { return {}; }
-        }
-
-        function saveLobbiesToStorage(lobbies) {
-            localStorage.setItem('online_lobbies', JSON.stringify(lobbies));
-        }
-
-        function getLobbyFromStorage(lobbyId) {
-            const lobbies = getLobbiesFromStorage();
-            return lobbies[lobbyId] || null;
-        }
-
-        function saveLobbyToStorage(lobbyId, data) {
-            const lobbies = getLobbiesFromStorage();
-            lobbies[lobbyId] = data;
-            saveLobbiesToStorage(lobbies);
-        }
-
-        function deleteLobbyFromStorage(lobbyId) {
-            const lobbies = getLobbiesFromStorage();
-            delete lobbies[lobbyId];
-            saveLobbiesToStorage(lobbies);
-        }
-
-        // 2. СЕРВЕР - синхронизация между разными устройствами
-        async function syncLobbyToServer(lobbyId, data) {
-            try {
-                await fetch(SERVER_URL + '/api/lobby/sync', {
+                const res = await fetch(SERVER_URL + endpoint, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ lobby_id: lobbyId, data: data })
+                    body: JSON.stringify(data)
                 });
-            } catch (e) {}
-        }
-
-        async function getLobbiesFromServer() {
-            try {
-                const res = await fetch(SERVER_URL + '/api/lobby/list');
                 return await res.json();
-            } catch (e) { return []; }
+            } catch (e) {
+                return { error: 'Ошибка соединения с сервером' };
+            }
         }
 
-        // 3. BROADCAST - синхронизация между вкладками одного браузера
-        function broadcastLobbyUpdate(lobbyId, data) {
+        async function apiGet(endpoint) {
             try {
-                const bc = new BroadcastChannel('football_lobbies');
-                bc.postMessage({ type: 'lobby_update', lobbyId: lobbyId, data: data });
-                bc.close();
-            } catch (e) {}
+                const res = await fetch(SERVER_URL + endpoint);
+                return await res.json();
+            } catch (e) {
+                return { error: 'Ошибка соединения с сервером' };
+            }
         }
 
-        // ---- ОБЪЕДИНЁННАЯ ФУНКЦИЯ ДЛЯ ПОЛУЧЕНИЯ АКТУАЛЬНОГО ЛОББИ ----
-        function getLobby(lobbyId) {
-            // Сначала проверяем локальное хранилище
-            let lobby = getLobbyFromStorage(lobbyId);
-            if (lobby) return lobby;
-
-            // Если нет - проверяем кэш
-            if (lobbiesCache[lobbyId]) return lobbiesCache[lobbyId];
-
-            return null;
-        }
-
-        function saveLobby(lobbyId, data) {
-            // Сохраняем локально
-            saveLobbyToStorage(lobbyId, data);
-            // Обновляем кэш
-            lobbiesCache[lobbyId] = data;
-            // Отправляем на сервер
-            syncLobbyToServer(lobbyId, data);
-            // Шлём broadcast
-            broadcastLobbyUpdate(lobbyId, data);
-        }
-
-        function deleteLobby(lobbyId) {
-            deleteLobbyFromStorage(lobbyId);
-            delete lobbiesCache[lobbyId];
-            syncLobbyToServer(lobbyId, null);
-        }
-
-        // ---- ИНИЦИАЛИЗАЦИЯ BROADCAST ----
-        function initBroadcast() {
+        // ---- WEBSOCKET ----
+        function initSocket() {
             try {
-                const bc = new BroadcastChannel('football_lobbies');
-                bc.onmessage = (event) => {
-                    if (event.data.type === 'lobby_update') {
-                        const { lobbyId, data } = event.data;
-                        if (data) {
-                            lobbiesCache[lobbyId] = data;
-                            saveLobbyToStorage(lobbyId, data);
-                            if (isInLobby && currentLobby === lobbyId) {
-                                updateLobbyUI();
-                            }
-                        } else {
-                            delete lobbiesCache[lobbyId];
-                            deleteLobbyFromStorage(lobbyId);
-                            if (isInLobby && currentLobby === lobbyId) {
-                                closeLobbyUI();
-                                showMessage('❌ Лобби было удалено');
-                            }
-                        }
+                socket = new WebSocket('wss://' + SERVER_URL.replace('https://', '') + '/socket.io/?EIO=4&transport=websocket');
+                socket.onopen = function() {
+                    console.log('🔌 WebSocket подключен');
+                    // Подписываемся если есть лобби
+                    if (currentLobby && isInLobby) {
+                        subscribeToLobby(currentLobby);
                     }
                 };
-            } catch (e) {}
+                socket.onmessage = function(event) {
+                    try {
+                        const data = JSON.parse(event.data);
+                        if (data.type === 'lobby_update') {
+                            handleLobbyUpdate(data);
+                        }
+                    } catch (e) {}
+                };
+                socket.onclose = function() {
+                    console.log('🔌 WebSocket отключен');
+                    setTimeout(initSocket, 3000);
+                };
+                socket.onerror = function() {
+                    console.log('🔌 WebSocket ошибка');
+                };
+            } catch (e) {
+                console.log('WebSocket не доступен, используем polling');
+            }
+        }
+
+        function subscribeToLobby(lobbyId) {
+            if (socket && socket.readyState === WebSocket.OPEN) {
+                socket.send(JSON.stringify({
+                    type: 'subscribe',
+                    lobby_id: lobbyId
+                }));
+                isSubscribed = true;
+            }
+        }
+
+        function unsubscribeFromLobby() {
+            if (socket && socket.readyState === WebSocket.OPEN && isSubscribed) {
+                socket.send(JSON.stringify({
+                    type: 'unsubscribe'
+                }));
+                isSubscribed = false;
+            }
+        }
+
+        function handleLobbyUpdate(data) {
+            const { lobby_id, lobby } = data;
+            if (currentLobby === lobby_id && isInLobby) {
+                updateLobbyUI();
+            }
         }
 
         // ---- СОХРАНЕНИЕ ИГРОКА ----
@@ -1002,33 +971,38 @@
 
         function closeLobbyUI() {
             document.getElementById('lobby-overlay').style.display = 'none';
+            if (isSubscribed) {
+                unsubscribeFromLobby();
+            }
         }
 
         // ---- СОЗДАНИЕ ЛОББИ ----
-        function createLobby() {
+        async function createLobby() {
             const lobbyName = document.getElementById('lobbyNameInput').value.trim() || 'Лобби ' + playerName;
             if (!playerName) { showMessage('❌ Сначала войдите в аккаунт!'); return; }
 
-            const lobbyId = 'lobby_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
-            const lobbyData = {
-                id: lobbyId,
+            const result = await apiCall('/api/lobby/create', {
                 name: lobbyName,
                 host: playerName,
-                mode: lobbyMode,
-                players: [playerName],
-                status: 'waiting',
-                created: Date.now()
-            };
+                mode: lobbyMode
+            });
 
-            saveLobby(lobbyId, lobbyData);
+            if (result.error) {
+                showMessage('❌ ' + result.error);
+                return;
+            }
 
-            currentLobby = lobbyId;
+            currentLobby = result.lobby_id;
             isInLobby = true;
             isHost = true;
 
             closeCreateLobbyUI();
             showLobbyUI();
             showMessage('✅ Лобби "' + lobbyName + '" создано!');
+
+            // Подписываемся на обновления
+            subscribeToLobby(currentLobby);
+
             updateLobbyUI();
             startLobbySync();
         }
@@ -1038,38 +1012,20 @@
             const list = document.getElementById('lobby-list');
             if (!list) return;
 
-            // Получаем из localStorage
-            let localLobbies = getLobbiesFromStorage();
-            let available = Object.values(localLobbies).filter(l =>
-                l.status === 'waiting' &&
-                l.players.length < 2 &&
-                l.host !== playerName
-            );
+            const result = await apiGet('/api/lobby/list');
 
-            // Получаем с сервера
-            const serverLobbies = await getLobbiesFromServer();
-            if (!serverLobbies.error && serverLobbies.length > 0) {
-                const lobbies = getLobbiesFromStorage();
-                serverLobbies.forEach(l => {
-                    if (!lobbies[l.id]) {
-                        lobbies[l.id] = l;
-                    }
-                });
-                saveLobbiesToStorage(lobbies);
-                available = Object.values(lobbies).filter(l =>
-                    l.status === 'waiting' &&
-                    l.players.length < 2 &&
-                    l.host !== playerName
-                );
+            if (result.error) {
+                list.innerHTML = '<div style="text-align:center;color:rgba(255,255,255,0.3);padding:20px;">Ошибка загрузки</div>';
+                return;
             }
 
-            if (available.length === 0) {
+            if (result.length === 0) {
                 list.innerHTML = '<div style="text-align:center;color:rgba(255,255,255,0.3);padding:20px;">Нет доступных лобби</div>';
                 return;
             }
 
             let html = '';
-            available.forEach(lobby => {
+            result.forEach(lobby => {
                 const isFull = lobby.players.length >= 2;
                 html += `
                             <div class="lobby-item">
@@ -1088,16 +1044,16 @@
         }
 
         // ---- ПРИСОЕДИНЕНИЕ ----
-        function joinLobby(lobbyId) {
-            const lobby = getLobby(lobbyId);
-            if (!lobby) { showMessage('❌ Лобби не найдено!'); return; }
-            if (lobby.players.length >= 2) { showMessage('❌ Лобби заполнено!'); return; }
-            if (lobby.status === 'playing') { showMessage('❌ Матч уже идёт!'); return; }
-            if (lobby.players.includes(playerName)) { showMessage('❌ Вы уже в лобби!'); return; }
+        async function joinLobby(lobbyId) {
+            const result = await apiCall('/api/lobby/join', {
+                lobby_id: lobbyId,
+                player: playerName
+            });
 
-            // Добавляем игрока
-            lobby.players.push(playerName);
-            saveLobby(lobbyId, lobby);
+            if (result.error) {
+                showMessage('❌ ' + result.error);
+                return;
+            }
 
             currentLobby = lobbyId;
             isInLobby = true;
@@ -1106,6 +1062,10 @@
             closeFindLobbyUI();
             showLobbyUI();
             showMessage('✅ Вы присоединились к лобби!');
+
+            // Подписываемся на обновления
+            subscribeToLobby(currentLobby);
+
             updateLobbyUI();
             startLobbySync();
         }
@@ -1113,44 +1073,44 @@
         // ---- СИНХРОНИЗАЦИЯ ----
         function startLobbySync() {
             if (syncInterval) clearInterval(syncInterval);
-            syncInterval = setInterval(() => {
+            syncInterval = setInterval(async () => {
                 if (!currentLobby || !isInLobby) {
                     clearInterval(syncInterval);
                     syncInterval = null;
                     return;
                 }
-                // Проверяем обновления из localStorage
-                const lobby = getLobbyFromStorage(currentLobby);
-                if (!lobby) {
+                // Получаем актуальные данные с сервера
+                const result = await apiGet('/api/lobby/get/' + currentLobby);
+                if (result.error) {
+                    // Лобби удалено
                     closeLobbyUI();
                     showMessage('❌ Лобби было удалено');
                     if (syncInterval) { clearInterval(syncInterval);
                         syncInterval = null; }
                     return;
                 }
-                // Если состав игроков изменился - обновляем UI
-                const currentPlayers = document.getElementById('lobby-players-list').innerHTML;
                 updateLobbyUI();
-            }, 1000);
+            }, 1500);
         }
 
         // ---- ВЫХОД ----
-        function leaveLobby() {
+        async function leaveLobby() {
             if (!currentLobby) return;
             if (syncInterval) { clearInterval(syncInterval);
                 syncInterval = null; }
 
-            const lobby = getLobby(currentLobby);
-            if (lobby) {
-                lobby.players = lobby.players.filter(p => p !== playerName);
-                if (lobby.players.length === 0) {
-                    deleteLobby(currentLobby);
-                } else {
-                    if (lobby.host === playerName && lobby.players.length > 0) {
-                        lobby.host = lobby.players[0];
-                    }
-                    saveLobby(currentLobby, lobby);
-                }
+            const result = await apiCall('/api/lobby/leave', {
+                lobby_id: currentLobby,
+                player: playerName
+            });
+
+            if (result.error) {
+                showMessage('❌ ' + result.error);
+                return;
+            }
+
+            if (isSubscribed) {
+                unsubscribeFromLobby();
             }
 
             currentLobby = null;
@@ -1163,16 +1123,19 @@
         }
 
         // ---- ОБНОВЛЕНИЕ ЛОББИ ----
-        function updateLobbyUI() {
+        async function updateLobbyUI() {
             if (!currentLobby) return;
-            const lobby = getLobby(currentLobby);
-            if (!lobby) {
+
+            const result = await apiGet('/api/lobby/get/' + currentLobby);
+            if (result.error) {
                 closeLobbyUI();
                 showMessage('❌ Лобби было удалено');
                 if (syncInterval) { clearInterval(syncInterval);
                     syncInterval = null; }
                 return;
             }
+
+            const lobby = result;
 
             document.getElementById('lobby-title').textContent = '🏠 ' + lobby.name;
             document.getElementById('lobby-info').textContent = '📊 Режим: ' + lobby.mode;
@@ -1224,26 +1187,30 @@
         }
 
         // ---- НАЧАЛО МАТЧА ----
-        function startOnlineMatch() {
+        async function startOnlineMatch() {
             if (!currentLobby || !isHost) {
                 showMessage('❌ Только хост может начать матч!');
                 return;
             }
 
-            const lobby = getLobby(currentLobby);
-            if (!lobby || lobby.players.length < 2) {
-                showMessage('❌ Нужно минимум 2 игрока!');
+            const result = await apiCall('/api/lobby/start', {
+                lobby_id: currentLobby
+            });
+
+            if (result.error) {
+                showMessage('❌ ' + result.error);
                 return;
             }
 
-            lobby.status = 'playing';
-            saveLobby(currentLobby, lobby);
-
+            const lobby = result.lobby;
             const opponent = lobby.players.find(p => p !== playerName);
             opponentName = opponent || 'Соперник';
 
             if (syncInterval) { clearInterval(syncInterval);
                 syncInterval = null; }
+            if (isSubscribed) {
+                unsubscribeFromLobby();
+            }
 
             closeLobbyUI();
             showMessage('⚽ Матч начинается! Противник: ' + opponentName);
@@ -1269,6 +1236,7 @@
             shootTimer = 0;
         let keys = { up: false, down: false, left: false, right: false };
 
+        // ---- ИНИЦИАЛИЗАЦИЯ ----
         window.onload = function() {
             canvas = document.getElementById('gameCanvas');
             ctx = canvas.getContext('2d');
@@ -1276,7 +1244,7 @@
             window.addEventListener('resize', resizeCanvas);
             loadSave();
             updateUI();
-            initBroadcast();
+            initSocket();
             setupJoystick();
             setupActionButtons();
             setupKeyboard();
@@ -1292,6 +1260,11 @@
             const base = document.getElementById('joystick-base');
             const thumb = document.getElementById('joystick-thumb');
             const area = document.getElementById('joystick-area');
+
+            let joystickTouchId = null,
+                joystickDX = 0,
+                joystickDY = 0,
+                joystickActive = false;
 
             const handleMove = (clientX, clientY) => {
                 const rect = base.getBoundingClientRect();
@@ -1323,11 +1296,6 @@
                 keys.left = false;
                 keys.right = false;
             };
-
-            let joystickTouchId = null,
-                joystickDX = 0,
-                joystickDY = 0,
-                joystickActive = false;
 
             area.addEventListener('touchstart', e => {
                 e.preventDefault();
@@ -2056,7 +2024,7 @@
             document.getElementById('login-container').style.display = 'none';
         }
 
-        function handleLogin() {
+        async function handleLogin() {
             const name = document.getElementById('loginName').value.trim();
             const pass = document.getElementById('loginPass').value.trim();
             const msg = document.getElementById('loginMsg');
@@ -2064,30 +2032,28 @@
             if (!name || !pass) { msg.textContent = '❌ Заполните все поля!';
                 msg.className = 'login-error'; return; }
 
-            const users = JSON.parse(localStorage.getItem('football_users') || '{}');
             const title = document.getElementById('loginTitle').textContent;
             const isRegister = title.includes('Регистрация');
 
-            if (isRegister) {
-                if (users[name]) { msg.textContent = '❌ Игрок уже существует!';
-                    msg.className = 'login-error'; return; }
-                users[name] = { password: pass, rating: 50, crystals: 100 };
-                localStorage.setItem('football_users', JSON.stringify(users));
-                msg.textContent = '✅ Регистрация успешна!';
-                msg.className = 'login-success';
-            } else {
-                if (!users[name]) { msg.textContent = '❌ Игрок не найден!';
-                    msg.className = 'login-error'; return; }
-                if (users[name].password !== pass) { msg.textContent = '❌ Неверный пароль!';
-                    msg.className = 'login-error'; return; }
-                msg.textContent = '✅ Вход выполнен!';
-                msg.className = 'login-success';
+            const result = await apiCall(isRegister ? '/api/register' : '/api/login', {
+                name: name,
+                password: pass
+            });
+
+            if (result.error) {
+                msg.textContent = '❌ ' + result.error;
+                msg.className = 'login-error';
+                return;
             }
 
-            const userData = users[name];
+            msg.textContent = '✅ Успешно!';
+            msg.className = 'login-success';
+
             playerName = name;
-            playerRating = userData.rating || 50;
-            playerCrystals = userData.crystals || 100;
+            if (result.player) {
+                playerRating = result.player.rating || 50;
+                playerCrystals = result.player.crystals || 100;
+            }
             saveGame();
             updateUI();
 
@@ -2097,10 +2063,10 @@
             }, 800);
         }
 
-        console.log('⚽ STREET FOOTBALL ONLINE v16.0 загружена!');
+        console.log('⚽ STREET FOOTBALL ONLINE v17.0 загружена!');
         console.log('👤 Игрок:', playerName || 'Гость');
-        console.log('🌐 3 способа синхронизации лобби: localStorage + Broadcast + Server');
-        console.log('📦 Лобби НЕ УДАЛЯЮТСЯ при присоединении!');
+        console.log('🌐 Серверная синхронизация лобби!');
+        console.log('📦 Лобби НЕ удаляются!');
     </script>
 </body>
 </html>
