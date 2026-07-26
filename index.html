@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>⚽ STREET FOOTBALL - 1x1</title>
     <style>
         * {
@@ -13,13 +13,13 @@
             user-select: none;
             -webkit-touch-callout: none;
         }
-        body {
-            background: #0d1b2a;
-            overflow: hidden;
-            font-family: Arial, sans-serif;
-            position: fixed;
+        html, body {
             width: 100%;
             height: 100%;
+            overflow: hidden;
+            position: fixed;
+            background: #0d1b2a;
+            font-family: Arial, sans-serif;
             color: white;
         }
         canvas {
@@ -27,6 +27,7 @@
             width: 100vw;
             height: 100vh;
             background: #1b4332;
+            image-rendering: pixelated;
         }
         #ui-overlay {
             position: absolute;
@@ -112,12 +113,12 @@
             left: 50%;
             transform: translateX(-50%);
             color: white;
-            font-size: 32px;
+            font-size: 28px;
             font-weight: bold;
             text-shadow: 0 0 20px rgba(0, 0, 0, 0.8);
             background: rgba(0, 0, 0, 0.6);
-            padding: 3px 24px;
-            border-radius: 12px;
+            padding: 3px 18px;
+            border-radius: 10px;
             pointer-events: none;
             z-index: 20;
             display: none;
@@ -127,7 +128,7 @@
             top: 10px;
             right: 10px;
             color: white;
-            font-size: 16px;
+            font-size: 14px;
             font-weight: bold;
             text-shadow: 0 0 20px rgba(0, 0, 0, 0.8);
             background: rgba(0, 0, 0, 0.5);
@@ -139,7 +140,7 @@
         }
         #statusBar {
             position: absolute;
-            top: 60px;
+            top: 55px;
             left: 10px;
             color: rgba(255, 255, 255, 0.6);
             font-size: 10px;
@@ -152,10 +153,10 @@
         }
         #ratingDisplay {
             position: absolute;
-            top: 60px;
+            top: 55px;
             right: 10px;
             color: #ffd700;
-            font-size: 12px;
+            font-size: 11px;
             font-weight: bold;
             pointer-events: none;
             z-index: 10;
@@ -166,7 +167,7 @@
         }
         #online-status {
             position: absolute;
-            top: 60px;
+            top: 55px;
             left: 50%;
             transform: translateX(-50%);
             color: #51cf66;
@@ -181,10 +182,10 @@
         }
         #joystick-area {
             position: absolute;
-            bottom: 80px;
-            left: 20px;
-            width: 130px;
-            height: 130px;
+            bottom: 70px;
+            left: 15px;
+            width: 120px;
+            height: 120px;
             pointer-events: auto;
             z-index: 30;
             display: none;
@@ -192,8 +193,8 @@
         }
         #joystick-base {
             position: absolute;
-            width: 130px;
-            height: 130px;
+            width: 120px;
+            height: 120px;
             border-radius: 50%;
             background: rgba(255, 255, 255, 0.12);
             border: 3px solid rgba(255, 255, 255, 0.2);
@@ -203,8 +204,8 @@
         }
         #joystick-thumb {
             position: absolute;
-            width: 55px;
-            height: 55px;
+            width: 50px;
+            height: 50px;
             border-radius: 50%;
             background: radial-gradient(circle at 40% 35%, rgba(255, 255, 255, 0.6), rgba(200, 200, 200, 0.3));
             border: 2px solid rgba(255, 255, 255, 0.3);
@@ -228,8 +229,8 @@
         }
         #action-buttons {
             position: absolute;
-            bottom: 80px;
-            right: 20px;
+            bottom: 70px;
+            right: 15px;
             display: none;
             flex-direction: column;
             gap: 10px;
@@ -238,12 +239,12 @@
         }
         .action-btn {
             pointer-events: auto;
-            width: 70px;
-            height: 70px;
+            width: 60px;
+            height: 60px;
             border-radius: 50%;
             border: 3px solid rgba(255, 255, 255, 0.3);
             color: white;
-            font-size: 13px;
+            font-size: 12px;
             font-weight: bold;
             display: flex;
             align-items: center;
@@ -261,10 +262,6 @@
             background: radial-gradient(circle at 40% 35%, rgba(255, 80, 80, 0.8), rgba(200, 30, 30, 0.6));
             border-color: rgba(255, 100, 100, 0.5);
         }
-        .btn-pass {
-            background: radial-gradient(circle at 40% 35%, rgba(80, 255, 80, 0.8), rgba(30, 200, 30, 0.6));
-            border-color: rgba(100, 255, 100, 0.5);
-        }
         .btn-tackle {
             background: radial-gradient(circle at 40% 35%, rgba(80, 80, 255, 0.8), rgba(30, 30, 200, 0.6));
             border-color: rgba(100, 100, 255, 0.5);
@@ -275,7 +272,7 @@
             left: 50%;
             transform: translate(-50%, -50%);
             color: white;
-            font-size: 26px;
+            font-size: 24px;
             font-weight: bold;
             text-shadow: 0 0 30px rgba(0, 0, 0, 0.9);
             background: rgba(0, 0, 0, 0.8);
@@ -597,44 +594,46 @@
             bottom: 10px;
             left: 50%;
             transform: translateX(-50%);
-            width: 200px;
+            width: 160px;
             z-index: 50;
             display: none;
+            font-size: 12px;
+            padding: 8px;
         }
         @media(max-width:600px) {
             #joystick-area {
-                width: 110px;
-                height: 110px;
+                width: 100px;
+                height: 100px;
                 bottom: 60px;
-                left: 15px;
+                left: 10px;
             }
             #joystick-base {
-                width: 110px;
-                height: 110px;
+                width: 100px;
+                height: 100px;
             }
             #joystick-thumb {
-                width: 45px;
-                height: 45px;
+                width: 42px;
+                height: 42px;
             }
             .action-btn {
-                width: 58px;
-                height: 58px;
-                font-size: 11px;
+                width: 50px;
+                height: 50px;
+                font-size: 10px;
             }
             #action-buttons {
                 gap: 8px;
                 bottom: 60px;
-                right: 15px;
+                right: 10px;
             }
             #menu-container .title {
                 font-size: 22px;
             }
             #score-display {
-                font-size: 24px;
-                padding: 2px 16px;
+                font-size: 22px;
+                padding: 2px 14px;
             }
             .btn {
-                font-size: 11px;
+                font-size: 12px;
                 padding: 8px 10px;
             }
             .lobby-item {
@@ -646,59 +645,85 @@
                 text-align: center;
             }
             #exit-match-btn {
-                width: 150px;
-                font-size: 12px;
-                padding: 8px;
+                width: 130px;
+                font-size: 11px;
+                padding: 6px;
             }
         }
         @media(max-width:400px) {
             #joystick-area {
-                width: 90px;
-                height: 90px;
+                width: 80px;
+                height: 80px;
                 bottom: 50px;
-                left: 10px;
+                left: 8px;
             }
             #joystick-base {
-                width: 90px;
-                height: 90px;
+                width: 80px;
+                height: 80px;
             }
             #joystick-thumb {
-                width: 38px;
-                height: 38px;
+                width: 34px;
+                height: 34px;
             }
             .action-btn {
-                width: 50px;
-                height: 50px;
-                font-size: 10px;
+                width: 44px;
+                height: 44px;
+                font-size: 9px;
             }
             #action-buttons {
                 gap: 6px;
                 bottom: 50px;
-                right: 10px;
+                right: 8px;
             }
             #score-display {
-                font-size: 20px;
-                padding: 2px 12px;
+                font-size: 18px;
+                padding: 2px 10px;
             }
             #timer-display {
-                font-size: 13px;
+                font-size: 12px;
                 padding: 2px 8px;
             }
             .btn {
-                font-size: 10px;
+                font-size: 11px;
                 padding: 6px 8px;
             }
             #exit-match-btn {
-                width: 120px;
+                width: 100px;
                 font-size: 10px;
-                padding: 6px;
+                padding: 4px;
+            }
+        }
+        @media(orientation: landscape) and (max-height: 500px) {
+            #joystick-area {
+                width: 80px;
+                height: 80px;
+                bottom: 40px;
+                left: 10px;
+            }
+            #joystick-base {
+                width: 80px;
+                height: 80px;
+            }
+            #joystick-thumb {
+                width: 34px;
+                height: 34px;
+            }
+            .action-btn {
+                width: 44px;
+                height: 44px;
+                font-size: 9px;
+            }
+            #action-buttons {
+                gap: 6px;
+                bottom: 40px;
+                right: 10px;
             }
         }
     </style>
 </head>
 <body>
     <canvas id="gameCanvas"></canvas>
-    
+
     <div id="ui-overlay">
         <div id="score-display">0 : 0</div>
         <div id="timer-display">⏱️ 5:00</div>
@@ -784,7 +809,7 @@
             <button class="action-btn btn-tackle" id="btn-tackle">🛡️<br>Отбор</button>
         </div>
 
-        <button class="btn btn-red" id="exit-match-btn" onclick="leaveMatch()">🚪 ВЫЙТИ ИЗ МАТЧА</button>
+        <button class="btn btn-red" id="exit-match-btn" onclick="leaveMatch()">🚪 ВЫЙТИ</button>
     </div>
 
     <script>
@@ -811,7 +836,6 @@
         let matchId = null;
         let matchState = null;
         let isMatchSubscribed = false;
-        let keys = { up: false, down: false, left: false, right: false };
         let localPlayers = {};
         let localBall = { x: 600, y: 350 };
         let homeScore = 0,
@@ -820,7 +844,6 @@
         let matchFinished = false;
         let syncInterval = null;
         let socket = null;
-        let isMoving = false;
         let lastDirection = { dx: 0, dy: 0 };
 
         // ============================================================
@@ -1314,7 +1337,7 @@
         }
 
         // ============================================================
-        // ====== 8-НАПРАВЛЕННЫЙ ДЖОСТИК =============================
+        // ====== 8-НАПРАВЛЕННЫЙ ДЖОСТИК (ИСПРАВЛЕННЫЙ) ==============
         // ============================================================
 
         function setupJoystick() {
@@ -1329,7 +1352,8 @@
             function get8Direction(dx, dy) {
                 const angle = Math.atan2(dy, dx);
                 const deg = angle * 180 / Math.PI;
-                
+
+                // 8 направлений (НЕ инвертировано!)
                 if (deg > -22.5 && deg <= 22.5) return { dx: 1, dy: 0 };
                 if (deg > 22.5 && deg <= 67.5) return { dx: 1, dy: -1 };
                 if (deg > 67.5 && deg <= 112.5) return { dx: 0, dy: -1 };
@@ -1346,35 +1370,36 @@
                 const centerX = rect.left + rect.width / 2;
                 const centerY = rect.top + rect.height / 2;
                 const maxDist = rect.width / 2 - 30;
-                
+
                 let dx = cx - centerX;
-                let dy = cy - centerY;
+                let dy = centerY - cy; // ← ИСПРАВЛЕНО! (было cy - centerY, стало centerY - cy)
+
                 const dist = Math.sqrt(dx * dx + dy * dy);
-                
+
                 if (dist > maxDist) {
                     dx = dx / dist * maxDist;
                     dy = dy / dist * maxDist;
                 }
-                
-                thumb.style.left = rect.width / 2 + dx - 27.5 + 'px';
-                thumb.style.top = rect.height / 2 + dy - 27.5 + 'px';
-                
+
+                thumb.style.left = rect.width / 2 + dx - 25 + 'px';
+                thumb.style.top = rect.height / 2 - dy - 25 + 'px';
+
                 const deadZone = 0.15;
                 const normX = dx / maxDist;
                 const normY = dy / maxDist;
-                
+
                 let direction = { dx: 0, dy: 0 };
-                
+
                 if (Math.abs(normX) < deadZone && Math.abs(normY) < deadZone) {
                     direction = { dx: 0, dy: 0 };
                 } else {
                     direction = get8Direction(normX, normY);
                 }
-                
+
                 // Отправляем только если изменилось
                 if (direction.dx !== lastDirection.dx || direction.dy !== lastDirection.dy) {
                     lastDirection = direction;
-                    
+
                     if (direction.dx === 0 && direction.dy === 0) {
                         sendStop();
                     } else {
@@ -1387,18 +1412,26 @@
                 thumb.style.left = '50%';
                 thumb.style.top = '50%';
                 thumb.style.transform = 'translate(-50%, -50%)';
-                
+
                 lastDirection = { dx: 0, dy: 0 };
                 sendStop();
             }
 
-            area.addEventListener('touchstart', e => {
+            // Очищаем старые слушатели (если были)
+            const newArea = area.cloneNode(true);
+            area.parentNode.replaceChild(newArea, area);
+
+            // Навешиваем на новый элемент
+            const newBase = document.getElementById('joystick-base');
+            const newThumb = document.getElementById('joystick-thumb');
+
+            newArea.addEventListener('touchstart', e => {
                 e.preventDefault();
                 touchId = e.changedTouches[0].identifier;
                 handleMove(e.changedTouches[0].clientX, e.changedTouches[0].clientY);
             }, { passive: false });
 
-            area.addEventListener('touchmove', e => {
+            newArea.addEventListener('touchmove', e => {
                 e.preventDefault();
                 for (let t of e.changedTouches) {
                     if (t.identifier === touchId) {
@@ -1407,7 +1440,7 @@
                 }
             }, { passive: false });
 
-            area.addEventListener('touchend', e => {
+            newArea.addEventListener('touchend', e => {
                 for (let t of e.changedTouches) {
                     if (t.identifier === touchId) {
                         handleEnd();
@@ -1415,10 +1448,10 @@
                 }
             }, { passive: false });
 
-            area.addEventListener('touchcancel', handleEnd, { passive: false });
+            newArea.addEventListener('touchcancel', handleEnd, { passive: false });
 
             let mouseDown = false;
-            area.addEventListener('mousedown', e => { mouseDown = true;
+            newArea.addEventListener('mousedown', e => { mouseDown = true;
                 handleMove(e.clientX, e.clientY); });
             document.addEventListener('mousemove', e => { if (mouseDown) handleMove(e.clientX, e.clientY); });
             document.addEventListener('mouseup', () => { if (mouseDown) { mouseDown = false;
@@ -1426,7 +1459,7 @@
         }
 
         // ============================================================
-        // ====== ОТПРАВКА ДЕЙСТВИЙ (СОБЫТИЯ) ========================
+        // ====== ОТПРАВКА ДЕЙСТВИЙ ===================================
         // ============================================================
 
         function sendMove(dx, dy) {
@@ -1471,16 +1504,20 @@
         function setupButtons() {
             const shootBtn = document.getElementById('btn-shoot');
             if (shootBtn) {
-                shootBtn.addEventListener('touchstart', e => { e.preventDefault();
+                const newShoot = shootBtn.cloneNode(true);
+                shootBtn.parentNode.replaceChild(newShoot, shootBtn);
+                newShoot.addEventListener('touchstart', e => { e.preventDefault();
                     sendShoot(); });
-                shootBtn.addEventListener('mousedown', sendShoot);
+                newShoot.addEventListener('mousedown', sendShoot);
             }
 
             const tackleBtn = document.getElementById('btn-tackle');
             if (tackleBtn) {
-                tackleBtn.addEventListener('touchstart', e => { e.preventDefault();
+                const newTackle = tackleBtn.cloneNode(true);
+                tackleBtn.parentNode.replaceChild(newTackle, tackleBtn);
+                newTackle.addEventListener('touchstart', e => { e.preventDefault();
                     sendTackle(); });
-                tackleBtn.addEventListener('mousedown', sendTackle);
+                newTackle.addEventListener('mousedown', sendTackle);
             }
 
             // Клавиатура
@@ -1647,6 +1684,7 @@
                 h = canvas.height;
             ctx.clearRect(0, 0, w, h);
 
+            // На весь экран!
             const scale = Math.min(w / 1200, h / 700);
             const ox = (w - 1200 * scale) / 2;
             const oy = (h - 700 * scale) / 2;
@@ -1798,10 +1836,10 @@
             setTimeout(() => { el.style.display = 'none'; }, 2500);
         }
 
-        console.log('⚽ STREET FOOTBALL 1x1 v22.0 загружена!');
+        console.log('⚽ STREET FOOTBALL 1x1 v23.0 загружена!');
         console.log('🌐 Сервер:', SERVER_URL);
         console.log('👤 Игрок:', playerName || 'Гость');
-        console.log('🎮 8-направленный джостик!');
+        console.log('🎮 Джостик исправлен!');
     </script>
 </body>
 </html>
