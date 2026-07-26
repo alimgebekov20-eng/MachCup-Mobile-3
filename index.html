@@ -5,776 +5,21 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>⚽ STREET FOOTBALL - ОНЛАЙН</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            touch-action: none;
-            user-select: none;
-            -webkit-touch-callout: none;
-        }
-        body {
-            background: #0d1b2a;
-            overflow: hidden;
-            font-family: Arial, sans-serif;
-            position: fixed;
-            width: 100%;
-            height: 100%;
-            color: white;
-        }
-        canvas {
-            display: block;
-            width: 100vw;
-            height: 100vh;
-            background: #1b4332;
-        }
-        #ui-overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-            z-index: 10;
-        }
-        .btn {
-            pointer-events: auto;
-            background: rgba(60, 60, 80, 0.85);
-            border: 2px solid rgba(255, 255, 255, 0.2);
-            color: white;
-            font-size: 14px;
-            font-weight: bold;
-            padding: 10px 16px;
-            border-radius: 10px;
-            cursor: pointer;
-            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
-            transition: all 0.2s;
-            touch-action: manipulation;
-            width: 100%;
-            text-align: center;
-        }
-        .btn:active {
-            transform: scale(0.95);
-        }
-        .btn-blue {
-            background: rgba(50, 100, 255, 0.7);
-            border-color: #4d7aff;
-        }
-        .btn-red {
-            background: rgba(200, 50, 50, 0.7);
-            border-color: #ff6b6b;
-        }
-        .btn-green {
-            background: rgba(0, 200, 100, 0.7);
-            border-color: #51cf66;
-        }
-        .btn-gray {
-            background: rgba(100, 100, 120, 0.7);
-            border-color: rgba(255, 255, 255, 0.2);
-        }
-        .btn-orange {
-            background: rgba(255, 150, 50, 0.7);
-            border-color: #ffa94d;
-        }
-        #menu-container {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            text-align: center;
-            pointer-events: none;
-            width: 94%;
-            max-width: 440px;
-            max-height: 95vh;
-            overflow-y: auto;
-        }
-        #menu-container .title {
-            color: white;
-            font-size: 28px;
-            font-weight: bold;
-            text-shadow: 0 0 30px rgba(0, 0, 0, 0.8);
-            margin-bottom: 6px;
-        }
-        #menu-container .subtitle {
-            color: rgba(255, 255, 255, 0.6);
-            font-size: 12px;
-            margin-bottom: 10px;
-        }
-        .btn-full {
-            margin: 4px 0;
-            padding: 10px;
-            font-size: 14px;
-        }
-        #score-display {
-            position: absolute;
-            top: 10px;
-            left: 50%;
-            transform: translateX(-50%);
-            color: white;
-            font-size: 24px;
-            font-weight: bold;
-            text-shadow: 0 0 20px rgba(0, 0, 0, 0.8);
-            background: rgba(0, 0, 0, 0.6);
-            padding: 3px 16px;
-            border-radius: 10px;
-            pointer-events: none;
-            z-index: 20;
-            display: none;
-        }
-        #timer-display {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            color: white;
-            font-size: 16px;
-            font-weight: bold;
-            text-shadow: 0 0 20px rgba(0, 0, 0, 0.8);
-            background: rgba(0, 0, 0, 0.5);
-            padding: 3px 10px;
-            border-radius: 8px;
-            pointer-events: none;
-            z-index: 20;
-            display: none;
-        }
-        #statusBar {
-            position: absolute;
-            top: 52px;
-            left: 10px;
-            color: rgba(255, 255, 255, 0.6);
-            font-size: 10px;
-            pointer-events: none;
-            z-index: 10;
-            background: rgba(0, 0, 0, 0.4);
-            padding: 2px 8px;
-            border-radius: 6px;
-            display: none;
-        }
-        #ratingDisplay {
-            position: absolute;
-            top: 52px;
-            right: 10px;
-            color: #ffd700;
-            font-size: 12px;
-            font-weight: bold;
-            pointer-events: none;
-            z-index: 10;
-            background: rgba(0, 0, 0, 0.4);
-            padding: 2px 8px;
-            border-radius: 6px;
-            display: none;
-        }
-        #online-status {
-            position: absolute;
-            top: 52px;
-            left: 50%;
-            transform: translateX(-50%);
-            color: #51cf66;
-            font-size: 11px;
-            font-weight: bold;
-            pointer-events: none;
-            z-index: 10;
-            background: rgba(0, 0, 0, 0.5);
-            padding: 2px 12px;
-            border-radius: 6px;
-            display: none;
-        }
-        #joystick-area {
-            position: absolute;
-            bottom: 80px;
-            left: 20px;
-            width: 130px;
-            height: 130px;
-            pointer-events: auto;
-            z-index: 30;
-            display: none;
-            touch-action: none;
-        }
-        #joystick-base {
-            position: absolute;
-            width: 130px;
-            height: 130px;
-            border-radius: 50%;
-            background: rgba(255, 255, 255, 0.12);
-            border: 3px solid rgba(255, 255, 255, 0.2);
-            backdrop-filter: blur(4px);
-            -webkit-backdrop-filter: blur(4px);
-            box-shadow: 0 0 40px rgba(0, 0, 0, 0.3);
-        }
-        #joystick-thumb {
-            position: absolute;
-            width: 55px;
-            height: 55px;
-            border-radius: 50%;
-            background: radial-gradient(circle at 40% 35%, rgba(255, 255, 255, 0.6), rgba(200, 200, 200, 0.3));
-            border: 2px solid rgba(255, 255, 255, 0.3);
-            left: 50%;
-            top: 50%;
-            transform: translate(-50%, -50%);
-            box-shadow: 0 0 30px rgba(255, 255, 255, 0.1);
-            transition: none;
-            pointer-events: none;
-        }
-        #joystick-center-dot {
-            position: absolute;
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            background: rgba(255, 255, 255, 0.2);
-            left: 50%;
-            top: 50%;
-            transform: translate(-50%, -50%);
-            pointer-events: none;
-        }
-        #action-buttons {
-            position: absolute;
-            bottom: 80px;
-            right: 20px;
-            display: none;
-            flex-direction: column;
-            gap: 10px;
-            pointer-events: none;
-            z-index: 30;
-        }
-        .action-btn {
-            pointer-events: auto;
-            width: 70px;
-            height: 70px;
-            border-radius: 50%;
-            border: 3px solid rgba(255, 255, 255, 0.3);
-            color: white;
-            font-size: 13px;
-            font-weight: bold;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
-            touch-action: manipulation;
-            backdrop-filter: blur(4px);
-            -webkit-backdrop-filter: blur(4px);
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-        }
-        .action-btn:active {
-            transform: scale(0.92);
-        }
-        .btn-shoot {
-            background: radial-gradient(circle at 40% 35%, rgba(255, 80, 80, 0.8), rgba(200, 30, 30, 0.6));
-            border-color: rgba(255, 100, 100, 0.5);
-        }
-        .btn-pass {
-            background: radial-gradient(circle at 40% 35%, rgba(80, 255, 80, 0.8), rgba(30, 200, 30, 0.6));
-            border-color: rgba(100, 255, 100, 0.5);
-        }
-        .btn-tackle {
-            background: radial-gradient(circle at 40% 35%, rgba(80, 80, 255, 0.8), rgba(30, 30, 200, 0.6));
-            border-color: rgba(100, 100, 255, 0.5);
-        }
-        #message {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            color: white;
-            font-size: 26px;
-            font-weight: bold;
-            text-shadow: 0 0 30px rgba(0, 0, 0, 0.9);
-            background: rgba(0, 0, 0, 0.8);
-            padding: 14px 28px;
-            border-radius: 14px;
-            pointer-events: none;
-            z-index: 40;
-            display: none;
-            text-align: center;
-            max-width: 90%;
-        }
-        #lobby-overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.7);
-            backdrop-filter: blur(8px);
-            -webkit-backdrop-filter: blur(8px);
-            z-index: 95;
-            display: none;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-        }
-        #lobby-container {
-            background: rgba(13, 27, 42, 0.95);
-            border-radius: 20px;
-            padding: 20px;
-            width: 100%;
-            max-width: 460px;
-            max-height: 90vh;
-            overflow-y: auto;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            box-shadow: 0 0 60px rgba(0, 0, 0, 0.5);
-        }
-        #lobby-container h2 {
-            color: #ffd700;
-            text-align: center;
-            margin-bottom: 8px;
-            font-size: 20px;
-        }
-        .lobby-info {
-            text-align: center;
-            font-size: 14px;
-            color: rgba(255, 255, 255, 0.6);
-            margin-bottom: 12px;
-        }
-        .lobby-players {
-            background: rgba(255, 255, 255, 0.03);
-            border-radius: 10px;
-            padding: 10px;
-            margin-bottom: 12px;
-        }
-        .lobby-player {
-            padding: 6px 10px;
-            margin: 3px 0;
-            border-radius: 6px;
-            background: rgba(255, 255, 255, 0.05);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        .lobby-player .host-badge {
-            color: #ffd700;
-            font-size: 11px;
-        }
-        .lobby-player .ready-badge {
-            color: #51cf66;
-            font-size: 11px;
-        }
-        .lobby-player .waiting-badge {
-            color: rgba(255, 255, 255, 0.3);
-            font-size: 11px;
-        }
-        #create-lobby-overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.7);
-            backdrop-filter: blur(8px);
-            -webkit-backdrop-filter: blur(8px);
-            z-index: 92;
-            display: none;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-        }
-        #create-lobby-container {
-            background: rgba(13, 27, 42, 0.95);
-            border-radius: 20px;
-            padding: 20px;
-            width: 100%;
-            max-width: 460px;
-            max-height: 90vh;
-            overflow-y: auto;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            box-shadow: 0 0 60px rgba(0, 0, 0, 0.5);
-        }
-        #create-lobby-container h2 {
-            color: #ffd700;
-            text-align: center;
-            margin-bottom: 12px;
-            font-size: 20px;
-        }
-        #create-lobby-container input {
-            width: 100%;
-            padding: 10px;
-            margin: 5px 0;
-            border-radius: 8px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            background: rgba(255, 255, 255, 0.06);
-            color: white;
-            font-size: 14px;
-            pointer-events: auto;
-            outline: none;
-        }
-        #create-lobby-container input::placeholder {
-            color: rgba(255, 255, 255, 0.25);
-        }
-        #create-lobby-container input:focus {
-            border-color: #ffd700;
-        }
-        .mode-select {
-            display: flex;
-            gap: 10px;
-            margin: 10px 0;
-        }
-        .mode-select .btn {
-            flex: 1;
-            padding: 8px;
-            font-size: 13px;
-        }
-        .mode-select .btn.active {
-            background: rgba(255, 215, 0, 0.3) !important;
-            border-color: #ffd700 !important;
-        }
-        #find-lobby-overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.7);
-            backdrop-filter: blur(8px);
-            -webkit-backdrop-filter: blur(8px);
-            z-index: 93;
-            display: none;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-        }
-        #find-lobby-container {
-            background: rgba(13, 27, 42, 0.95);
-            border-radius: 20px;
-            padding: 20px;
-            width: 100%;
-            max-width: 460px;
-            max-height: 90vh;
-            overflow-y: auto;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            box-shadow: 0 0 60px rgba(0, 0, 0, 0.5);
-        }
-        #find-lobby-container h2 {
-            color: #4d7aff;
-            text-align: center;
-            margin-bottom: 12px;
-            font-size: 20px;
-        }
-        .lobby-item {
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 10px;
-            padding: 12px;
-            margin-bottom: 8px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border: 1px solid rgba(255, 255, 255, 0.05);
-        }
-        .lobby-item .lobby-info-text {
-            display: flex;
-            flex-direction: column;
-            align-items: flex-start;
-        }
-        .lobby-item .lobby-name {
-            font-weight: bold;
-            font-size: 14px;
-        }
-        .lobby-item .lobby-desc {
-            font-size: 11px;
-            color: rgba(255, 255, 255, 0.4);
-        }
-        .lobby-item .join-btn {
-            background: rgba(81, 207, 102, 0.2);
-            border: 1px solid rgba(81, 207, 102, 0.3);
-            border-radius: 8px;
-            padding: 6px 16px;
-            color: #51cf66;
-            font-weight: bold;
-            font-size: 12px;
-            cursor: pointer;
-            transition: all 0.2s;
-            pointer-events: auto !important;
-            z-index: 100;
-        }
-        .lobby-item .join-btn:active {
-            transform: scale(0.95);
-            background: rgba(81, 207, 102, 0.4);
-        }
-        .refresh-btn {
-            margin-bottom: 10px;
-        }
-        #online-overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.7);
-            backdrop-filter: blur(8px);
-            -webkit-backdrop-filter: blur(8px);
-            z-index: 90;
-            display: none;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-        }
-        #online-container {
-            background: rgba(13, 27, 42, 0.95);
-            border-radius: 20px;
-            padding: 20px;
-            width: 100%;
-            max-width: 460px;
-            max-height: 90vh;
-            overflow-y: auto;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            box-shadow: 0 0 60px rgba(0, 0, 0, 0.5);
-        }
-        #online-container h2 {
-            color: #4d7aff;
-            text-align: center;
-            margin-bottom: 8px;
-            font-size: 22px;
-        }
-        .online-status-text {
-            text-align: center;
-            font-size: 14px;
-            color: rgba(255, 255, 255, 0.5);
-            margin-bottom: 12px;
-            min-height: 24px;
-        }
-        .online-btn {
-            margin: 4px 0;
-        }
-        .close-online {
-            margin-top: 12px;
-        }
-        #login-container {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: rgba(13, 27, 42, 0.95);
-            border-radius: 16px;
-            padding: 20px;
-            width: 92%;
-            max-width: 380px;
-            z-index: 60;
-            pointer-events: auto;
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            display: none;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-        #login-container h2 {
-            color: white;
-            text-align: center;
-            margin-bottom: 10px;
-            font-size: 18px;
-        }
-        #login-container input {
-            width: 100%;
-            padding: 10px;
-            margin: 5px 0;
-            border-radius: 8px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            background: rgba(255, 255, 255, 0.06);
-            color: white;
-            font-size: 14px;
-            pointer-events: auto;
-            outline: none;
-        }
-        #login-container input::placeholder {
-            color: rgba(255, 255, 255, 0.25);
-        }
-        #login-container input:focus {
-            border-color: #ffd700;
-        }
-        #login-container .btn {
-            margin: 3px 0;
-        }
-        #loginMsg {
-            text-align: center;
-            margin-top: 6px;
-            font-size: 12px;
-            min-height: 18px;
-        }
-        .login-success {
-            color: #51cf66 !important;
-        }
-        .login-error {
-            color: #ff6b6b !important;
-        }
-        @media(max-width:600px) {
-            #joystick-area {
-                width: 110px;
-                height: 110px;
-                bottom: 60px;
-                left: 15px;
-            }
-            #joystick-base {
-                width: 110px;
-                height: 110px;
-            }
-            #joystick-thumb {
-                width: 45px;
-                height: 45px;
-            }
-            .action-btn {
-                width: 58px;
-                height: 58px;
-                font-size: 11px;
-            }
-            #action-buttons {
-                gap: 8px;
-                bottom: 60px;
-                right: 15px;
-            }
-            #menu-container .title {
-                font-size: 22px;
-            }
-            #score-display {
-                font-size: 20px;
-                padding: 2px 12px;
-            }
-            .btn {
-                font-size: 11px;
-                padding: 8px 10px;
-            }
-            .lobby-item {
-                flex-wrap: wrap;
-                gap: 8px;
-            }
-            .lobby-item .join-btn {
-                width: 100%;
-                text-align: center;
-            }
-        }
-        @media(max-width:400px) {
-            #joystick-area {
-                width: 90px;
-                height: 90px;
-                bottom: 50px;
-                left: 10px;
-            }
-            #joystick-base {
-                width: 90px;
-                height: 90px;
-            }
-            #joystick-thumb {
-                width: 38px;
-                height: 38px;
-            }
-            .action-btn {
-                width: 50px;
-                height: 50px;
-                font-size: 10px;
-            }
-            #action-buttons {
-                gap: 6px;
-                bottom: 50px;
-                right: 10px;
-            }
-            #score-display {
-                font-size: 16px;
-                padding: 2px 10px;
-            }
-            #timer-display {
-                font-size: 13px;
-                padding: 2px 8px;
-            }
-            .btn {
-                font-size: 10px;
-                padding: 6px 8px;
-            }
-        }
+        /* ===== ВЕСЬ СТИЛЬ ТОТ ЖЕ, ЧТО В ПРЕДЫДУЩЕЙ ВЕРСИИ ===== */
+        /* (возьми из предыдущего сообщения) */
     </style>
 </head>
 <body>
-    <canvas id="gameCanvas"></canvas>
-    <div id="ui-overlay">
-        <div id="score-display">0 : 0</div>
-        <div id="timer-display">⏱️ 5:00</div>
-        <div id="statusBar">⚽ Добро пожаловать!</div>
-        <div id="ratingDisplay">⭐ 50</div>
-        <div id="online-status"></div>
-
-        <div id="menu-container">
-            <div class="title">⚽ STREET<br>FOOTBALL</div>
-            <div class="subtitle" id="playerInfo">👤 Гость | ⭐ 50 | 💎 100</div>
-            <button class="btn btn-orange btn-full" onclick="showOnlineUI()">🌐 ОНЛАЙН</button>
-            <div id="guestMenu">
-                <button class="btn btn-blue btn-full" onclick="showLogin()">🔑 Войти</button>
-                <button class="btn btn-blue btn-full" onclick="showRegister()">📝 Регистрация</button>
-            </div>
-        </div>
-
-        <div id="login-container">
-            <h2 id="loginTitle">🔑 Вход</h2>
-            <input type="text" id="loginName" placeholder="Имя игрока">
-            <input type="password" id="loginPass" placeholder="Пароль">
-            <button class="btn btn-blue" onclick="handleLogin()">✅ Войти</button>
-            <button class="btn btn-gray" onclick="closeLogin()">↩️ Назад</button>
-            <div id="loginMsg"></div>
-        </div>
-
-        <div id="online-overlay">
-            <div id="online-container">
-                <h2>🌐 ОНЛАЙН</h2>
-                <div class="online-status-text" id="online-status-text">⚡ Выберите действие</div>
-                <button class="btn btn-green online-btn" onclick="showCreateLobbyUI()">🏠 СОЗДАТЬ ЛОББИ</button>
-                <button class="btn btn-blue online-btn" onclick="showFindLobbyUI()">🔍 НАЙТИ ЛОББИ</button>
-                <button class="btn btn-gray" onclick="closeOnlineUI()">↩️ Назад</button>
-            </div>
-        </div>
-
-        <div id="create-lobby-overlay">
-            <div id="create-lobby-container">
-                <h2>🏠 СОЗДАНИЕ ЛОББИ</h2>
-                <input type="text" id="lobbyNameInput" placeholder="Название лобби">
-                <div class="mode-select">
-                    <button class="btn active" onclick="selectLobbyMode('1x1', this)">⚔️ 1x1</button>
-                    <button class="btn" onclick="selectLobbyMode('2x2', this)">⚔️ 2x2</button>
-                </div>
-                <button class="btn btn-green" onclick="createLobby()">✅ СОЗДАТЬ</button>
-                <button class="btn btn-gray" onclick="closeCreateLobbyUI()">↩️ Назад</button>
-                <div id="create-lobby-msg"></div>
-            </div>
-        </div>
-
-        <div id="find-lobby-overlay">
-            <div id="find-lobby-container">
-                <h2>🔍 ПОИСК ЛОББИ</h2>
-                <button class="btn btn-blue refresh-btn" onclick="findLobbies()">🔄 Обновить</button>
-                <div id="lobby-list"></div>
-                <button class="btn btn-gray" onclick="closeFindLobbyUI()">↩️ Назад</button>
-            </div>
-        </div>
-
-        <div id="lobby-overlay">
-            <div id="lobby-container">
-                <h2 id="lobby-title">🏠 ЛОББИ</h2>
-                <div class="lobby-info" id="lobby-info">📊 Режим: 1x1</div>
-                <div class="lobby-players" id="lobby-players-list"></div>
-                <div class="lobby-info" id="lobby-status-text">⏳ Ожидание игроков...</div>
-                <button class="btn btn-green" id="lobby-start-btn" onclick="startOnlineMatch()" style="display:none;">▶️ НАЧАТЬ МАТЧ</button>
-                <button class="btn btn-red" onclick="leaveLobby()">🚪 ВЫЙТИ</button>
-                <div id="lobby-msg"></div>
-            </div>
-        </div>
-
-        <div id="message"></div>
-
-        <div id="joystick-area">
-            <div id="joystick-base">
-                <div id="joystick-thumb"></div>
-                <div id="joystick-center-dot"></div>
-            </div>
-        </div>
-
-        <div id="action-buttons">
-            <button class="action-btn btn-shoot" id="btn-shoot">⚽<br>Удар</button>
-            <button class="action-btn btn-pass" id="btn-pass">🎯<br>Пас</button>
-            <button class="action-btn btn-tackle" id="btn-tackle">🛡️<br>Отбор</button>
-        </div>
-    </div>
+    <!-- ===== ВЕСЬ HTML ТОТ ЖЕ ===== -->
+    <!-- (возьми из предыдущего сообщения) -->
 
     <script>
         // ============================================================
-        // ==================== КЛИЕНТ ОНЛАЙН ==========================
+        // ==================== КЛИЕНТ (ИСПРАВЛЕННЫЙ) =================
         // ============================================================
 
-        // ---- СЕРВЕР ----
         const SERVER_URL = 'https://machcup-mobile-server.onrender.com';
 
-        // ---- ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ----
         let canvas, ctx;
         let gameState = 'menu';
         let mode = '2x2';
@@ -789,14 +34,23 @@
         let isHost = false;
         let isOnline = false;
         let opponentName = '';
-        let syncInterval = null;
         let matchId = null;
         let matchState = null;
         let isMatchSubscribed = false;
+        let keys = { up: false, down: false, left: false, right: false };
+        let localPlayers = {};
+        let localBall = { x: 600, y: 350 };
+        let homeScore = 0,
+            awayScore = 0;
+        let gameTime = 0;
+        let matchFinished = false;
+        let syncInterval = null;
         let lastActionTime = 0;
-        let actionQueue = [];
 
-        // ---- API ----
+        // ============================================================
+        // ==================== API ====================================
+        // ============================================================
+
         async function apiCall(endpoint, data) {
             try {
                 const res = await fetch(SERVER_URL + endpoint, {
@@ -804,28 +58,25 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(data)
                 });
-                const result = await res.json();
-                console.log('📡 API Response:', endpoint, result);
-                return result;
+                return await res.json();
             } catch (e) {
-                console.error('❌ API Error:', endpoint, e);
-                return { error: 'Ошибка соединения с сервером', success: false };
+                return { error: 'Ошибка соединения' };
             }
         }
 
         async function apiGet(endpoint) {
             try {
                 const res = await fetch(SERVER_URL + endpoint);
-                const result = await res.json();
-                console.log('📡 API GET Response:', endpoint, result);
-                return result;
+                return await res.json();
             } catch (e) {
-                console.error('❌ API GET Error:', endpoint, e);
-                return { error: 'Ошибка соединения с сервером' };
+                return { error: 'Ошибка соединения' };
             }
         }
 
-        // ---- WEBSOCKET ----
+        // ============================================================
+        // ==================== WEBSOCKET =============================
+        // ============================================================
+
         let socket = null;
 
         function initSocket() {
@@ -834,90 +85,51 @@
                 socket = new WebSocket(wsUrl + '/socket.io/?EIO=4&transport=websocket');
                 socket.onopen = function() {
                     console.log('🔌 WebSocket подключен');
-                    if (currentLobby && isInLobby) {
-                        subscribeToLobby(currentLobby);
-                    }
-                    if (matchId) {
-                        subscribeToMatch(matchId);
-                    }
+                    if (currentLobby && isInLobby) subscribeLobby(currentLobby);
+                    if (matchId) subscribeMatch(matchId);
                 };
                 socket.onmessage = function(event) {
                     try {
                         const data = JSON.parse(event.data);
-                        console.log('📨 WebSocket message:', data);
                         if (data.type === 'lobby_update') {
                             handleLobbyUpdate(data);
                         } else if (data.type === 'match_update') {
                             handleMatchUpdate(data);
                         }
-                    } catch (e) {
-                        console.log('WebSocket parse error:', e);
-                    }
+                    } catch (e) {}
                 };
-                socket.onclose = function() {
-                    console.log('🔌 WebSocket отключен');
-                    setTimeout(initSocket, 3000);
-                };
-                socket.onerror = function() {
-                    console.log('🔌 WebSocket ошибка');
-                };
-            } catch (e) {
-                console.log('WebSocket не доступен, используем polling');
+                socket.onclose = function() { setTimeout(initSocket, 3000); };
+            } catch (e) {}
+        }
+
+        function subscribeLobby(lobbyId) {
+            if (socket && socket.readyState === WebSocket.OPEN) {
+                socket.send(JSON.stringify({ type: 'subscribe', lobby_id: lobbyId }));
             }
         }
 
-        function subscribeToLobby(lobbyId) {
+        function subscribeMatch(matchId) {
             if (socket && socket.readyState === WebSocket.OPEN) {
-                socket.send(JSON.stringify({
-                    type: 'subscribe',
-                    lobby_id: lobbyId
-                }));
-                console.log('📡 Подписан на лобби:', lobbyId);
-            }
-        }
-
-        function subscribeToMatch(matchId) {
-            if (socket && socket.readyState === WebSocket.OPEN) {
-                socket.send(JSON.stringify({
-                    type: 'subscribe_match',
-                    match_id: matchId
-                }));
+                socket.send(JSON.stringify({ type: 'subscribe_match', match_id: matchId }));
                 isMatchSubscribed = true;
-                console.log('📡 Подписан на матч:', matchId);
-            }
-        }
-
-        function unsubscribeFromMatch() {
-            if (socket && socket.readyState === WebSocket.OPEN && isMatchSubscribed) {
-                socket.send(JSON.stringify({
-                    type: 'unsubscribe_match',
-                    match_id: matchId
-                }));
-                isMatchSubscribed = false;
-                console.log('📡 Отписан от матча:', matchId);
             }
         }
 
         function handleLobbyUpdate(data) {
-            const { lobby_id, lobby } = data;
-            console.log('🔄 Обновление лобби:', lobby_id, lobby);
-            if (currentLobby === lobby_id && isInLobby) {
-                updateLobbyUI();
-            }
+            if (currentLobby === data.lobby_id && isInLobby) updateLobbyUI();
         }
 
         function handleMatchUpdate(data) {
-            const { match_id, state } = data;
-            console.log('⚽ Обновление матча:', match_id, state);
-            if (matchId === match_id) {
-                matchState = state;
-                if (gameState === 'playing') {
-                    updateGameFromState(state);
-                }
+            if (matchId === data.match_id) {
+                matchState = data.state;
+                if (gameState === 'playing') updateGameFromState(data.state);
             }
         }
 
-        // ---- СОХРАНЕНИЕ ----
+        // ============================================================
+        // ==================== СОХРАНЕНИЕ ============================
+        // ============================================================
+
         function loadSave() {
             try {
                 const data = localStorage.getItem('football_save');
@@ -927,22 +139,15 @@
                     playerRating = save.rating || 50;
                     playerCrystals = save.crystals || 100;
                 }
-            } catch (e) {
-                console.log('Ошибка загрузки сохранения:', e);
-            }
+            } catch (e) {}
         }
 
         function saveGame() {
-            try {
-                localStorage.setItem('football_save', JSON.stringify({
-                    name: playerName,
-                    rating: playerRating,
-                    crystals: playerCrystals
-                }));
-                console.log('💾 Сохранено:', playerName, playerRating, playerCrystals);
-            } catch (e) {
-                console.log('Ошибка сохранения:', e);
-            }
+            localStorage.setItem('football_save', JSON.stringify({
+                name: playerName,
+                rating: playerRating,
+                crystals: playerCrystals
+            }));
         }
 
         function updateUI() {
@@ -950,18 +155,19 @@
             if (playerName) {
                 info.textContent = '👤 ' + playerName + ' | ⭐ ' + playerRating + ' | 💎 ' + playerCrystals;
                 document.getElementById('guestMenu').style.display = 'none';
-                console.log('👤 Пользователь:', playerName);
             } else {
                 info.textContent = '👤 Гость | ⭐ 50 | 💎 100';
                 document.getElementById('guestMenu').style.display = 'block';
-                console.log('👤 Гость');
             }
             document.getElementById('ratingDisplay').textContent = '⭐ ' + playerRating;
         }
 
-        // ---- UI ----
+        // ============================================================
+        // ==================== UI =====================================
+        // ============================================================
+
         function showOnlineUI() {
-            if (!playerName) { showMessage('❌ Сначала войдите в аккаунт!'); return; }
+            if (!playerName) { showMessage('❌ Сначала войдите!'); return; }
             document.getElementById('online-overlay').style.display = 'flex';
         }
 
@@ -973,7 +179,6 @@
             closeOnlineUI();
             document.getElementById('create-lobby-overlay').style.display = 'flex';
             document.getElementById('lobbyNameInput').value = 'Лобби ' + playerName;
-            document.getElementById('create-lobby-msg').textContent = '';
             document.querySelectorAll('#create-lobby-container .mode-select .btn').forEach(b => b.classList.remove('active'));
             document.querySelector('#create-lobby-container .mode-select .btn:first-child').classList.add('active');
             lobbyMode = '1x1';
@@ -1010,7 +215,10 @@
             document.getElementById('lobby-overlay').style.display = 'none';
         }
 
-        // ---- ЛОГИН ----
+        // ============================================================
+        // ==================== ЛОГИН =================================
+        // ============================================================
+
         function showLogin() {
             document.getElementById('login-container').style.display = 'block';
             document.getElementById('loginTitle').textContent = '🔑 Вход';
@@ -1018,7 +226,6 @@
             document.getElementById('loginMsg').className = '';
             document.getElementById('loginName').value = '';
             document.getElementById('loginPass').value = '';
-            console.log('🔑 Показана форма входа');
         }
 
         function showRegister() {
@@ -1028,12 +235,10 @@
             document.getElementById('loginMsg').className = '';
             document.getElementById('loginName').value = '';
             document.getElementById('loginPass').value = '';
-            console.log('📝 Показана форма регистрации');
         }
 
         function closeLogin() {
             document.getElementById('login-container').style.display = 'none';
-            console.log('🔒 Форма закрыта');
         }
 
         async function handleLogin() {
@@ -1041,85 +246,47 @@
             const pass = document.getElementById('loginPass').value.trim();
             const msg = document.getElementById('loginMsg');
 
-            console.log('🔑 Попытка входа/регистрации:', name);
-
             if (!name || !pass) {
                 msg.textContent = '❌ Заполните все поля!';
                 msg.className = 'login-error';
                 return;
             }
 
-            if (name.length < 2) {
-                msg.textContent = '❌ Имя должно быть минимум 2 символа!';
+            const isRegister = document.getElementById('loginTitle').textContent.includes('Регистрация');
+            const result = await apiCall(isRegister ? '/api/register' : '/api/login', { name, password: pass });
+
+            if (result.error) {
+                msg.textContent = '❌ ' + result.error;
                 msg.className = 'login-error';
                 return;
             }
 
-            if (pass.length < 4) {
-                msg.textContent = '❌ Пароль должен быть минимум 4 символа!';
-                msg.className = 'login-error';
-                return;
+            msg.textContent = '✅ Успешно!';
+            msg.className = 'login-success';
+
+            playerName = name;
+            if (result.player) {
+                playerRating = result.player.rating || 50;
+                playerCrystals = result.player.crystals || 100;
             }
+            saveGame();
+            updateUI();
 
-            const title = document.getElementById('loginTitle').textContent;
-            const isRegister = title.includes('Регистрация');
-            const endpoint = isRegister ? '/api/register' : '/api/login';
-
-            console.log('📡 Отправка запроса на:', endpoint);
-
-            try {
-                const result = await apiCall(endpoint, {
-                    name: name,
-                    password: pass
-                });
-
-                console.log('📡 Ответ сервера:', result);
-
-                if (result.error) {
-                    msg.textContent = '❌ ' + result.error;
-                    msg.className = 'login-error';
-                    return;
-                }
-
-                if (!result.success) {
-                    msg.textContent = '❌ Ошибка! Попробуйте позже.';
-                    msg.className = 'login-error';
-                    return;
-                }
-
-                msg.textContent = '✅ Успешно!';
-                msg.className = 'login-success';
-
-                playerName = name;
-                if (result.player) {
-                    playerRating = result.player.rating || 50;
-                    playerCrystals = result.player.crystals || 100;
-                }
-                saveGame();
-                updateUI();
-
-                console.log('✅ Вход выполнен:', playerName);
-
-                setTimeout(() => {
-                    closeLogin();
-                    document.getElementById('loginMsg').textContent = '';
-                    document.getElementById('loginMsg').className = '';
-                    showMessage('👋 Добро пожаловать, ' + playerName + '!');
-                }, 1000);
-
-            } catch (error) {
-                console.error('❌ Ошибка:', error);
-                msg.textContent = '❌ Ошибка соединения с сервером!';
-                msg.className = 'login-error';
-            }
+            setTimeout(() => {
+                closeLogin();
+                document.getElementById('loginMsg').textContent = '';
+                document.getElementById('loginMsg').className = '';
+                showMessage('👋 Добро пожаловать, ' + playerName + '!');
+            }, 1000);
         }
 
-        // ---- ЛОББИ ----
+        // ============================================================
+        // ==================== ЛОББИ =================================
+        // ============================================================
+
         async function createLobby() {
             const lobbyName = document.getElementById('lobbyNameInput').value.trim() || 'Лобби ' + playerName;
-            if (!playerName) { showMessage('❌ Сначала войдите в аккаунт!'); return; }
-
-            console.log('🏠 Создание лобби:', lobbyName);
+            if (!playerName) { showMessage('❌ Войдите в аккаунт!'); return; }
 
             const result = await apiCall('/api/lobby/create', {
                 name: lobbyName,
@@ -1139,7 +306,7 @@
             closeCreateLobbyUI();
             showLobbyUI();
             showMessage('✅ Лобби "' + lobbyName + '" создано!');
-            subscribeToLobby(currentLobby);
+            subscribeLobby(currentLobby);
             updateLobbyUI();
             startLobbySync();
         }
@@ -1148,16 +315,9 @@
             const list = document.getElementById('lobby-list');
             if (!list) return;
 
-            console.log('🔍 Поиск лобби...');
-
             const result = await apiGet('/api/lobby/list');
 
-            if (result.error) {
-                list.innerHTML = '<div style="text-align:center;color:rgba(255,255,255,0.3);padding:20px;">Ошибка загрузки</div>';
-                return;
-            }
-
-            if (result.length === 0) {
+            if (result.error || result.length === 0) {
                 list.innerHTML = '<div style="text-align:center;color:rgba(255,255,255,0.3);padding:20px;">Нет доступных лобби</div>';
                 return;
             }
@@ -1166,25 +326,22 @@
             result.forEach(lobby => {
                 const isFull = lobby.players.length >= 2;
                 html += `
-                            <div class="lobby-item">
-                                <div class="lobby-info-text">
-                                    <div class="lobby-name">${lobby.name}</div>
-                                    <div class="lobby-desc">👤 ${lobby.host} | ${lobby.mode} | ${lobby.players.length}/2 игроков</div>
-                                </div>
-                                ${!isFull && lobby.host !== playerName ? 
-                                    `<button class="join-btn" onclick="joinLobby('${lobby.id}')">🔗 Присоединиться</button>` : 
-                                    `<span style="color:rgba(255,255,255,0.2);font-size:12px;">${isFull ? '🟢 Полно' : '❌ Ваше лобби'}</span>`
-                                }
-                            </div>
-                        `;
+                    <div class="lobby-item">
+                        <div class="lobby-info-text">
+                            <div class="lobby-name">${lobby.name}</div>
+                            <div class="lobby-desc">👤 ${lobby.host} | ${lobby.mode} | ${lobby.players.length}/2</div>
+                        </div>
+                        ${!isFull && lobby.host !== playerName ? 
+                            `<button class="join-btn" onclick="joinLobby('${lobby.id}')">🔗 Присоединиться</button>` : 
+                            `<span style="color:rgba(255,255,255,0.2);">${isFull ? '🟢 Полно' : '❌ Ваше'}</span>`
+                        }
+                    </div>
+                `;
             });
             list.innerHTML = html;
-            console.log('🔍 Найдено лобби:', result.length);
         }
 
         async function joinLobby(lobbyId) {
-            console.log('🔗 Присоединение к лобби:', lobbyId);
-
             const result = await apiCall('/api/lobby/join', {
                 lobby_id: lobbyId,
                 player: playerName
@@ -1201,8 +358,8 @@
 
             closeFindLobbyUI();
             showLobbyUI();
-            showMessage('✅ Вы присоединились к лобби!');
-            subscribeToLobby(currentLobby);
+            showMessage('✅ Вы присоединились!');
+            subscribeLobby(currentLobby);
             updateLobbyUI();
             startLobbySync();
         }
@@ -1218,13 +375,13 @@
                 const result = await apiGet('/api/lobby/get/' + currentLobby);
                 if (result.error) {
                     closeLobbyUI();
-                    showMessage('❌ Лобби было удалено');
+                    showMessage('❌ Лобби удалено');
                     if (syncInterval) { clearInterval(syncInterval);
                         syncInterval = null; }
                     return;
                 }
                 updateLobbyUI();
-            }, 1500);
+            }, 2000);
         }
 
         async function leaveLobby() {
@@ -1232,17 +389,10 @@
             if (syncInterval) { clearInterval(syncInterval);
                 syncInterval = null; }
 
-            console.log('🚪 Выход из лобби:', currentLobby);
-
-            const result = await apiCall('/api/lobby/leave', {
+            await apiCall('/api/lobby/leave', {
                 lobby_id: currentLobby,
                 player: playerName
             });
-
-            if (result.error) {
-                showMessage('❌ ' + result.error);
-                return;
-            }
 
             currentLobby = null;
             isInLobby = false;
@@ -1259,7 +409,7 @@
             const result = await apiGet('/api/lobby/get/' + currentLobby);
             if (result.error) {
                 closeLobbyUI();
-                showMessage('❌ Лобби было удалено');
+                showMessage('❌ Лобби удалено');
                 if (syncInterval) { clearInterval(syncInterval);
                     syncInterval = null; }
                 return;
@@ -1268,30 +418,30 @@
             const lobby = result;
 
             document.getElementById('lobby-title').textContent = '🏠 ' + lobby.name;
-            document.getElementById('lobby-info').textContent = '📊 Режим: ' + lobby.mode;
+            document.getElementById('lobby-info').textContent = '📊 ' + lobby.mode;
 
             let playersHtml = '';
             lobby.players.forEach(p => {
                 const isHostPlayer = p === lobby.host;
                 const isMe = p === playerName;
                 playersHtml += `
-                            <div class="lobby-player" style="${isMe ? 'border-left: 3px solid #ffd700;' : ''}">
-                                <span>${p} ${isHostPlayer ? '👑' : ''} ${isMe ? ' (Вы)' : ''}</span>
-                                <span class="${isHostPlayer ? 'host-badge' : 'ready-badge'}">
-                                    ${isHostPlayer ? 'Хост' : '✅ Готов'}
-                                </span>
-                            </div>
-                        `;
+                    <div class="lobby-player" style="${isMe ? 'border-left: 3px solid #ffd700;' : ''}">
+                        <span>${p} ${isHostPlayer ? '👑' : ''} ${isMe ? ' (Вы)' : ''}</span>
+                        <span class="${isHostPlayer ? 'host-badge' : 'ready-badge'}">
+                            ${isHostPlayer ? 'Хост' : '✅ Готов'}
+                        </span>
+                    </div>
+                `;
             });
 
             const emptySlots = 2 - lobby.players.length;
             for (let i = 0; i < emptySlots; i++) {
                 playersHtml += `
-                            <div class="lobby-player">
-                                <span style="color:rgba(255,255,255,0.2);">🔲 Свободно</span>
-                                <span class="waiting-badge">Ожидание...</span>
-                            </div>
-                        `;
+                    <div class="lobby-player">
+                        <span style="color:rgba(255,255,255,0.2);">🔲 Свободно</span>
+                        <span class="waiting-badge">Ожидание...</span>
+                    </div>
+                `;
             }
             document.getElementById('lobby-players-list').innerHTML = playersHtml;
 
@@ -1302,13 +452,13 @@
                 statusText.textContent = '⚽ Матч идёт...';
                 startBtn.style.display = 'none';
             } else if (lobby.players.length >= 2) {
-                statusText.textContent = '✅ Все игроки готовы!';
+                statusText.textContent = '✅ Все готовы!';
                 if (isHost) {
                     startBtn.style.display = 'block';
                     startBtn.textContent = '▶️ НАЧАТЬ МАТЧ';
                 } else {
                     startBtn.style.display = 'none';
-                    statusText.textContent = '⏳ Ожидание начала матча...';
+                    statusText.textContent = '⏳ Ожидание хоста...';
                 }
             } else {
                 statusText.textContent = '⏳ Ожидание игроков... (' + lobby.players.length + '/2)';
@@ -1318,11 +468,9 @@
 
         async function startOnlineMatch() {
             if (!currentLobby || !isHost) {
-                showMessage('❌ Только хост может начать матч!');
+                showMessage('❌ Только хост может начать!');
                 return;
             }
-
-            console.log('⚽ Начало матча в лобби:', currentLobby);
 
             const result = await apiCall('/api/lobby/start', {
                 lobby_id: currentLobby
@@ -1334,8 +482,7 @@
             }
 
             const lobby = result.lobby;
-            const opponent = lobby.players.find(p => p !== playerName);
-            opponentName = opponent || 'Соперник';
+            opponentName = lobby.players.find(p => p !== playerName) || 'Соперник';
             matchId = result.match_id;
 
             if (syncInterval) { clearInterval(syncInterval);
@@ -1345,34 +492,46 @@
             showMessage('⚽ Матч начинается! Противник: ' + opponentName);
             isOnline = true;
 
-            subscribeToMatch(matchId);
+            subscribeMatch(matchId);
 
             setTimeout(() => { startGame('online'); }, 500);
         }
 
-        // ---- ИГРОВОЙ ДВИЖОК ----
-        let homeScore = 0,
-            awayScore = 0,
-            gameTime = 0;
-        let matchFinished = false;
-        let keys = { up: false, down: false, left: false, right: false };
-        let localPlayers = {};
-        let localBall = { x: 600, y: 350 };
+        // ============================================================
+        // ==================== ВЫХОД ИЗ МАТЧА ========================
+        // ============================================================
 
-        // ---- ИНИЦИАЛИЗАЦИЯ ----
+        async function leaveMatch() {
+            if (!matchId) return;
+
+            await apiCall('/api/match/leave', {
+                match_id: matchId,
+                player: playerName
+            });
+
+            matchId = null;
+            isOnline = false;
+            matchFinished = true;
+
+            gameState = 'menu';
+            document.getElementById('menu-container').style.display = 'block';
+            document.getElementById('joystick-area').style.display = 'none';
+            document.getElementById('action-buttons').style.display = 'none';
+            document.getElementById('score-display').style.display = 'none';
+            document.getElementById('timer-display').style.display = 'none';
+            document.getElementById('statusBar').style.display = 'none';
+            document.getElementById('online-status').style.display = 'none';
+            updateUI();
+            showMessage('🚪 Вы вышли из матча');
+        }
+
+        // ============================================================
+        // ==================== ИГРОВОЙ ДВИЖОК ========================
+        // ============================================================
+
         window.onload = function() {
-            // Ждём загрузки DOM
             canvas = document.getElementById('gameCanvas');
-            if (!canvas) {
-                console.error('❌ Canvas не найден!');
-                return;
-            }
             ctx = canvas.getContext('2d');
-            if (!ctx) {
-                console.error('❌ Не удалось получить контекст canvas!');
-                return;
-            }
-            
             resizeCanvas();
             window.addEventListener('resize', resizeCanvas);
             loadSave();
@@ -1382,10 +541,7 @@
             setupActionButtons();
             setupKeyboard();
             gameLoop();
-            
             console.log('🚀 Игра загружена!');
-            console.log('🌐 Сервер:', SERVER_URL);
-            console.log('👤 Игрок:', playerName || 'Гость');
         };
 
         function resizeCanvas() {
@@ -1394,45 +550,43 @@
             canvas.height = window.innerHeight;
         }
 
+        // ---- ДЖОСТИК ----
         function setupJoystick() {
             const base = document.getElementById('joystick-base');
             const thumb = document.getElementById('joystick-thumb');
             const area = document.getElementById('joystick-area');
 
-            let joystickTouchId = null,
-                joystickDX = 0,
-                joystickDY = 0;
+            let touchId = null;
 
-            const handleMove = (clientX, clientY) => {
+            const handleMove = (cx, cy) => {
                 const rect = base.getBoundingClientRect();
-                const cx = rect.left + rect.width / 2;
-                const cy = rect.top + rect.height / 2;
+                const centerX = rect.left + rect.width / 2;
+                const centerY = rect.top + rect.height / 2;
                 const maxDist = rect.width / 2 - 30;
-                let dx = clientX - cx,
-                    dy = clientY - cy;
+                let dx = cx - centerX,
+                    dy = cy - centerY;
                 const dist = Math.sqrt(dx * dx + dy * dy);
-                if (dist > maxDist) { dx = (dx / dist) * maxDist;
-                    dy = (dy / dist) * maxDist; }
-                thumb.style.left = (rect.width / 2 + dx - 27.5) + 'px';
-                thumb.style.top = (rect.height / 2 + dy - 27.5) + 'px';
-                joystickDX = dx / maxDist;
-                joystickDY = dy / maxDist;
-                const deadZone = 0.15;
-                keys.up = joystickDY < -deadZone;
-                keys.down = joystickDY > deadZone;
-                keys.left = joystickDX < -deadZone;
-                keys.right = joystickDX > deadZone;
-
-                sendAction('move', { dx: keys.left ? -1 : keys.right ? 1 : 0, dy: keys.up ? -1 : keys.down ? 1 : 0 });
+                if (dist > maxDist) { dx = dx / dist * maxDist;
+                    dy = dy / dist * maxDist; }
+                thumb.style.left = rect.width / 2 + dx - 27.5 + 'px';
+                thumb.style.top = rect.height / 2 + dy - 27.5 + 'px';
+                const dead = 0.15;
+                const normX = dx / maxDist,
+                    normY = dy / maxDist;
+                keys.up = normY < -dead;
+                keys.down = normY > dead;
+                keys.left = normX < -dead;
+                keys.right = normX > dead;
+                sendAction('move', {
+                    dx: keys.left ? -1 : keys.right ? 1 : 0,
+                    dy: keys.up ? -1 : keys.down ? 1 : 0
+                });
             };
 
             const handleEnd = () => {
                 thumb.style.left = '50%';
                 thumb.style.top = '50%';
                 thumb.style.transform = 'translate(-50%, -50%)';
-                joystickDX = 0;
-                joystickDY = 0;
-                joystickTouchId = null;
                 keys.up = false;
                 keys.down = false;
                 keys.left = false;
@@ -1442,38 +596,28 @@
 
             area.addEventListener('touchstart', e => {
                 e.preventDefault();
-                const touch = e.changedTouches[0];
-                joystickTouchId = touch.identifier;
-                handleMove(touch.clientX, touch.clientY);
+                touchId = e.changedTouches[0].identifier;
+                handleMove(e.changedTouches[0].clientX, e.changedTouches[0].clientY);
             }, { passive: false });
-
             area.addEventListener('touchmove', e => {
                 e.preventDefault();
-                for (let touch of e.changedTouches) {
-                    if (touch.identifier === joystickTouchId) {
-                        handleMove(touch.clientX, touch.clientY);
-                    }
+                for (let t of e.changedTouches) {
+                    if (t.identifier === touchId) handleMove(t.clientX, t.clientY);
                 }
             }, { passive: false });
-
-            area.addEventListener('touchend', e => {
-                for (let touch of e.changedTouches) {
-                    if (touch.identifier === joystickTouchId) { handleEnd(); }
-                }
-            }, { passive: false });
-
+            area.addEventListener('touchend', e => { for (let t of e.changedTouches) { if (t.identifier === touchId)
+                        handleEnd(); } }, { passive: false });
             area.addEventListener('touchcancel', handleEnd, { passive: false });
 
             let mouseDown = false;
             area.addEventListener('mousedown', e => { mouseDown = true;
                 handleMove(e.clientX, e.clientY); });
-            document.addEventListener('mousemove', e => {
-                if (mouseDown) { handleMove(e.clientX, e.clientY); }
-            });
+            document.addEventListener('mousemove', e => { if (mouseDown) handleMove(e.clientX, e.clientY); });
             document.addEventListener('mouseup', () => { if (mouseDown) { mouseDown = false;
                     handleEnd(); } });
         }
 
+        // ---- КНОПКИ ----
         function setupActionButtons() {
             document.getElementById('btn-shoot').addEventListener('touchstart', e => { e.preventDefault();
                 sendAction('shoot', { target_x: 1150, target_y: 350 }); });
@@ -1485,8 +629,24 @@
             document.getElementById('btn-tackle').addEventListener('touchstart', e => { e.preventDefault();
                 sendAction('tackle', {}); });
             document.getElementById('btn-tackle').addEventListener('mousedown', () => sendAction('tackle', {}));
+
+            // Кнопка выхода из матча (добавляем динамически)
+            const exitBtn = document.createElement('button');
+            exitBtn.className = 'btn btn-red';
+            exitBtn.textContent = '🚪 ВЫЙТИ ИЗ МАТЧА';
+            exitBtn.style.position = 'absolute';
+            exitBtn.style.bottom = '10px';
+            exitBtn.style.left = '50%';
+            exitBtn.style.transform = 'translateX(-50%)';
+            exitBtn.style.width = '200px';
+            exitBtn.style.zIndex = '50';
+            exitBtn.style.display = 'none';
+            exitBtn.id = 'exit-match-btn';
+            exitBtn.onclick = leaveMatch;
+            document.getElementById('ui-overlay').appendChild(exitBtn);
         }
 
+        // ---- КЛАВИАТУРА ----
         function setupKeyboard() {
             document.addEventListener('keydown', e => {
                 if (gameState === 'playing') {
@@ -1502,12 +662,7 @@
                         sendAction('shoot', { target_x: 1150, target_y: 350 }); }
                     if (e.key === 'e') sendAction('pass', {});
                     if (e.key === 'q') sendAction('tackle', {});
-                }
-                if (e.key === 'Escape') {
-                    if (document.getElementById('lobby-overlay').style.display === 'flex') leaveLobby();
-                    if (document.getElementById('online-overlay').style.display === 'flex') closeOnlineUI();
-                    if (document.getElementById('create-lobby-overlay').style.display === 'flex') closeCreateLobbyUI();
-                    if (document.getElementById('find-lobby-overlay').style.display === 'flex') closeFindLobbyUI();
+                    if (e.key === 'Escape') leaveMatch();
                 }
             });
             document.addEventListener('keyup', e => {
@@ -1522,24 +677,20 @@
             });
         }
 
+        // ---- ОТПРАВКА ДЕЙСТВИЙ ----
         function sendAction(type, data) {
             if (!matchId || gameState !== 'playing') return;
-
             const now = Date.now();
-            if (now - lastActionTime < 30) return;
+            if (now - lastActionTime < 50) return;
             lastActionTime = now;
-
-            const action = { type, ...data };
-            actionQueue.push(action);
-            if (actionQueue.length > 10) actionQueue.shift();
-
             apiCall('/api/match/action', {
                 match_id: matchId,
                 player_name: playerName,
-                action: action
+                action: { type, ...data }
             }).catch(() => {});
         }
 
+        // ---- ОБНОВЛЕНИЕ ОТ СЕРВЕРА ----
         function updateGameFromState(state) {
             if (!state) return;
 
@@ -1573,10 +724,7 @@
             }
 
             if (state.ball) {
-                localBall = {
-                    x: state.ball.x || 600,
-                    y: state.ball.y || 350
-                };
+                localBall = { x: state.ball.x || 600, y: state.ball.y || 350 };
             }
 
             if (state.status === 'finished') {
@@ -1584,6 +732,7 @@
             }
         }
 
+        // ---- ЗАПУСК ИГРЫ ----
         function startGame(type) {
             isOnline = type === 'online';
             gameState = 'playing';
@@ -1594,10 +743,11 @@
             document.getElementById('timer-display').style.display = 'block';
             document.getElementById('statusBar').style.display = 'block';
             document.getElementById('ratingDisplay').style.display = 'block';
+            document.getElementById('exit-match-btn').style.display = 'block';
 
             if (isOnline) {
                 document.getElementById('online-status').style.display = 'block';
-                document.getElementById('online-status').textContent = '🌐 Онлайн: ' + (opponentName || 'Соперник');
+                document.getElementById('online-status').textContent = '🌐 ' + opponentName;
                 document.getElementById('statusBar').textContent = '⚽ Онлайн матч!';
             }
 
@@ -1608,14 +758,13 @@
             document.getElementById('score-display').textContent = '0 : 0';
 
             if (isOnline && matchId) {
-                apiGet('/api/match/state/' + matchId).then(result => {
-                    if (!result.error) {
-                        updateGameFromState(result);
-                    }
+                apiGet('/api/match/state/' + matchId).then(r => {
+                    if (!r.error) updateGameFromState(r);
                 });
             }
         }
 
+        // ---- ИГРОВОЙ ЦИКЛ ----
         function gameLoop() {
             update();
             render();
@@ -1624,21 +773,15 @@
 
         function update() {
             if (gameState !== 'playing' || matchFinished) return;
-
             if (isOnline && matchId) {
-                if (Date.now() - lastActionTime > 200) {
-                    apiGet('/api/match/state/' + matchId).then(result => {
-                        if (!result.error) {
-                            updateGameFromState(result);
-                        }
-                    }).catch(() => {});
-                }
+                apiGet('/api/match/state/' + matchId).then(r => {
+                    if (!r.error) updateGameFromState(r);
+                }).catch(() => {});
             }
         }
 
         function render() {
             if (!canvas || !ctx) return;
-            
             const w = canvas.width,
                 h = canvas.height;
             ctx.clearRect(0, 0, w, h);
@@ -1666,7 +809,6 @@
             ctx.moveTo(600, 40);
             ctx.lineTo(600, 660);
             ctx.stroke();
-
             ctx.strokeRect(40, 250, 120, 200);
             ctx.strokeRect(1040, 250, 120, 200);
             ctx.strokeRect(40, 290, 60, 120);
@@ -1753,6 +895,7 @@
             }
         }
 
+        // ---- ЗАВЕРШЕНИЕ МАТЧА ----
         function endMatch() {
             if (matchFinished) return;
             matchFinished = true;
@@ -1773,6 +916,7 @@
             document.getElementById('statusBar').textContent = '🏁 ' + (isWin ? 'Победа!' : 'Поражение');
 
             setTimeout(() => {
+                document.getElementById('exit-match-btn').style.display = 'none';
                 gameState = 'menu';
                 document.getElementById('menu-container').style.display = 'block';
                 document.getElementById('joystick-area').style.display = 'none';
@@ -1790,12 +934,10 @@
             const el = document.getElementById('message');
             el.textContent = text;
             el.style.display = 'block';
-            console.log('💬 Сообщение:', text);
             setTimeout(() => { el.style.display = 'none'; }, 2500);
         }
 
-        // ---- ЗАПУСК ----
-        console.log('⚽ STREET FOOTBALL ONLINE v19.1 загружена!');
+        console.log('⚽ STREET FOOTBALL ONLINE v20.0 загружена!');
         console.log('🌐 Сервер:', SERVER_URL);
         console.log('👤 Игрок:', playerName || 'Гость');
     </script>
