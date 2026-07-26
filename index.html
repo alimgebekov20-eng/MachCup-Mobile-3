@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>⚽ STREET FOOTBALL - ОНЛАЙН</title>
+    <title>⚽ STREET FOOTBALL - 1x1</title>
     <style>
         * {
             margin: 0;
@@ -112,12 +112,12 @@
             left: 50%;
             transform: translateX(-50%);
             color: white;
-            font-size: 24px;
+            font-size: 32px;
             font-weight: bold;
             text-shadow: 0 0 20px rgba(0, 0, 0, 0.8);
             background: rgba(0, 0, 0, 0.6);
-            padding: 3px 16px;
-            border-radius: 10px;
+            padding: 3px 24px;
+            border-radius: 12px;
             pointer-events: none;
             z-index: 20;
             display: none;
@@ -139,7 +139,7 @@
         }
         #statusBar {
             position: absolute;
-            top: 52px;
+            top: 60px;
             left: 10px;
             color: rgba(255, 255, 255, 0.6);
             font-size: 10px;
@@ -152,7 +152,7 @@
         }
         #ratingDisplay {
             position: absolute;
-            top: 52px;
+            top: 60px;
             right: 10px;
             color: #ffd700;
             font-size: 12px;
@@ -166,7 +166,7 @@
         }
         #online-status {
             position: absolute;
-            top: 52px;
+            top: 60px;
             left: 50%;
             transform: translateX(-50%);
             color: #51cf66;
@@ -630,8 +630,8 @@
                 font-size: 22px;
             }
             #score-display {
-                font-size: 20px;
-                padding: 2px 12px;
+                font-size: 24px;
+                padding: 2px 16px;
             }
             .btn {
                 font-size: 11px;
@@ -677,8 +677,8 @@
                 right: 10px;
             }
             #score-display {
-                font-size: 16px;
-                padding: 2px 10px;
+                font-size: 20px;
+                padding: 2px 12px;
             }
             #timer-display {
                 font-size: 13px;
@@ -697,10 +697,8 @@
     </style>
 </head>
 <body>
-
-    <!-- ===== CANVAS ===== -->
     <canvas id="gameCanvas"></canvas>
-
+    
     <div id="ui-overlay">
         <div id="score-display">0 : 0</div>
         <div id="timer-display">⏱️ 5:00</div>
@@ -708,7 +706,6 @@
         <div id="ratingDisplay">⭐ 50</div>
         <div id="online-status"></div>
 
-        <!-- ===== МЕНЮ ===== -->
         <div id="menu-container">
             <div class="title">⚽ STREET<br>FOOTBALL</div>
             <div class="subtitle" id="playerInfo">👤 Гость | ⭐ 50 | 💎 100</div>
@@ -719,7 +716,6 @@
             </div>
         </div>
 
-        <!-- ===== ЛОГИН ===== -->
         <div id="login-container">
             <h2 id="loginTitle">🔑 Вход</h2>
             <input type="text" id="loginName" placeholder="Имя игрока">
@@ -729,7 +725,6 @@
             <div id="loginMsg"></div>
         </div>
 
-        <!-- ===== ОНЛАЙН ===== -->
         <div id="online-overlay">
             <div id="online-container">
                 <h2>🌐 ОНЛАЙН</h2>
@@ -740,7 +735,6 @@
             </div>
         </div>
 
-        <!-- ===== СОЗДАНИЕ ЛОББИ ===== -->
         <div id="create-lobby-overlay">
             <div id="create-lobby-container">
                 <h2>🏠 СОЗДАНИЕ ЛОББИ</h2>
@@ -755,7 +749,6 @@
             </div>
         </div>
 
-        <!-- ===== ПОИСК ЛОББИ ===== -->
         <div id="find-lobby-overlay">
             <div id="find-lobby-container">
                 <h2>🔍 ПОИСК ЛОББИ</h2>
@@ -765,7 +758,6 @@
             </div>
         </div>
 
-        <!-- ===== ЛОББИ ===== -->
         <div id="lobby-overlay">
             <div id="lobby-container">
                 <h2 id="lobby-title">🏠 ЛОББИ</h2>
@@ -778,10 +770,8 @@
             </div>
         </div>
 
-        <!-- ===== СООБЩЕНИЕ ===== -->
         <div id="message"></div>
 
-        <!-- ===== УПРАВЛЕНИЕ ===== -->
         <div id="joystick-area">
             <div id="joystick-base">
                 <div id="joystick-thumb"></div>
@@ -791,7 +781,6 @@
 
         <div id="action-buttons">
             <button class="action-btn btn-shoot" id="btn-shoot">⚽<br>Удар</button>
-            <button class="action-btn btn-pass" id="btn-pass">🎯<br>Пас</button>
             <button class="action-btn btn-tackle" id="btn-tackle">🛡️<br>Отбор</button>
         </div>
 
@@ -800,7 +789,7 @@
 
     <script>
         // ============================================================
-        // ==================== ВСЯ ЛОГИКА ============================
+        // ==================== КЛИЕНТ ================================
         // ============================================================
 
         const SERVER_URL = 'https://machcup-mobile-server.onrender.com';
@@ -830,11 +819,12 @@
         let gameTime = 0;
         let matchFinished = false;
         let syncInterval = null;
-        let lastActionTime = 0;
         let socket = null;
+        let isMoving = false;
+        let lastDirection = { dx: 0, dy: 0 };
 
         // ============================================================
-        // ==================== API ====================================
+        // ====== API ==================================================
         // ============================================================
 
         async function apiCall(endpoint, data) {
@@ -860,7 +850,7 @@
         }
 
         // ============================================================
-        // ==================== WEBSOCKET =============================
+        // ====== WEBSOCKET ============================================
         // ============================================================
 
         function initSocket() {
@@ -911,7 +901,7 @@
         }
 
         // ============================================================
-        // ==================== СОХРАНЕНИЕ ============================
+        // ====== СОХРАНЕНИЕ ==========================================
         // ============================================================
 
         function loadSave() {
@@ -952,7 +942,7 @@
         }
 
         // ============================================================
-        // ==================== UI =====================================
+        // ====== UI ==================================================
         // ============================================================
 
         function showOnlineUI() {
@@ -1017,7 +1007,7 @@
         }
 
         // ============================================================
-        // ==================== ЛОГИН =================================
+        // ====== ЛОГИН ===============================================
         // ============================================================
 
         function showLogin() {
@@ -1099,7 +1089,7 @@
         }
 
         // ============================================================
-        // ==================== ЛОББИ =================================
+        // ====== ЛОББИ ===============================================
         // ============================================================
 
         async function createLobby() {
@@ -1145,17 +1135,17 @@
             result.forEach(lobby => {
                 const isFull = lobby.players.length >= 2;
                 html += `
-                    <div class="lobby-item">
-                        <div class="lobby-info-text">
-                            <div class="lobby-name">${lobby.name}</div>
-                            <div class="lobby-desc">👤 ${lobby.host} | ${lobby.mode} | ${lobby.players.length}/2</div>
-                        </div>
-                        ${!isFull && lobby.host !== playerName ? 
-                            `<button class="join-btn" onclick="joinLobby('${lobby.id}')">🔗 Присоединиться</button>` : 
-                            `<span style="color:rgba(255,255,255,0.2);">${isFull ? '🟢 Полно' : '❌ Ваше'}</span>`
-                        }
-                    </div>
-                `;
+                            <div class="lobby-item">
+                                <div class="lobby-info-text">
+                                    <div class="lobby-name">${lobby.name}</div>
+                                    <div class="lobby-desc">👤 ${lobby.host} | ${lobby.mode} | ${lobby.players.length}/2</div>
+                                </div>
+                                ${!isFull && lobby.host !== playerName ? 
+                                    `<button class="join-btn" onclick="joinLobby('${lobby.id}')">🔗 Присоединиться</button>` : 
+                                    `<span style="color:rgba(255,255,255,0.2);">${isFull ? '🟢 Полно' : '❌ Ваше'}</span>`
+                                }
+                            </div>
+                        `;
             });
             list.innerHTML = html;
         }
@@ -1248,23 +1238,23 @@
                     const isHostPlayer = p === lobby.host;
                     const isMe = p === playerName;
                     playersHtml += `
-                        <div class="lobby-player" style="${isMe ? 'border-left: 3px solid #ffd700;' : ''}">
-                            <span>${p} ${isHostPlayer ? '👑' : ''} ${isMe ? ' (Вы)' : ''}</span>
-                            <span class="${isHostPlayer ? 'host-badge' : 'ready-badge'}">
-                                ${isHostPlayer ? 'Хост' : '✅ Готов'}
-                            </span>
-                        </div>
-                    `;
+                                <div class="lobby-player" style="${isMe ? 'border-left: 3px solid #ffd700;' : ''}">
+                                    <span>${p} ${isHostPlayer ? '👑' : ''} ${isMe ? ' (Вы)' : ''}</span>
+                                    <span class="${isHostPlayer ? 'host-badge' : 'ready-badge'}">
+                                        ${isHostPlayer ? 'Хост' : '✅ Готов'}
+                                    </span>
+                                </div>
+                            `;
                 });
 
                 const emptySlots = 2 - lobby.players.length;
                 for (let i = 0; i < emptySlots; i++) {
                     playersHtml += `
-                        <div class="lobby-player">
-                            <span style="color:rgba(255,255,255,0.2);">🔲 Свободно</span>
-                            <span class="waiting-badge">Ожидание...</span>
-                        </div>
-                    `;
+                                <div class="lobby-player">
+                                    <span style="color:rgba(255,255,255,0.2);">🔲 Свободно</span>
+                                    <span class="waiting-badge">Ожидание...</span>
+                                </div>
+                            `;
                 }
                 playersList.innerHTML = playersHtml;
             }
@@ -1324,15 +1314,195 @@
         }
 
         // ============================================================
-        // ==================== ВЫХОД ИЗ МАТЧА ========================
+        // ====== 8-НАПРАВЛЕННЫЙ ДЖОСТИК =============================
+        // ============================================================
+
+        function setupJoystick() {
+            const base = document.getElementById('joystick-base');
+            const thumb = document.getElementById('joystick-thumb');
+            const area = document.getElementById('joystick-area');
+
+            if (!base || !thumb || !area) return;
+
+            let touchId = null;
+
+            function get8Direction(dx, dy) {
+                const angle = Math.atan2(dy, dx);
+                const deg = angle * 180 / Math.PI;
+                
+                if (deg > -22.5 && deg <= 22.5) return { dx: 1, dy: 0 };
+                if (deg > 22.5 && deg <= 67.5) return { dx: 1, dy: -1 };
+                if (deg > 67.5 && deg <= 112.5) return { dx: 0, dy: -1 };
+                if (deg > 112.5 && deg <= 157.5) return { dx: -1, dy: -1 };
+                if (deg > 157.5 || deg <= -157.5) return { dx: -1, dy: 0 };
+                if (deg > -157.5 && deg <= -112.5) return { dx: -1, dy: 1 };
+                if (deg > -112.5 && deg <= -67.5) return { dx: 0, dy: 1 };
+                if (deg > -67.5 && deg <= -22.5) return { dx: 1, dy: 1 };
+                return { dx: 0, dy: 0 };
+            }
+
+            function handleMove(cx, cy) {
+                const rect = base.getBoundingClientRect();
+                const centerX = rect.left + rect.width / 2;
+                const centerY = rect.top + rect.height / 2;
+                const maxDist = rect.width / 2 - 30;
+                
+                let dx = cx - centerX;
+                let dy = cy - centerY;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                
+                if (dist > maxDist) {
+                    dx = dx / dist * maxDist;
+                    dy = dy / dist * maxDist;
+                }
+                
+                thumb.style.left = rect.width / 2 + dx - 27.5 + 'px';
+                thumb.style.top = rect.height / 2 + dy - 27.5 + 'px';
+                
+                const deadZone = 0.15;
+                const normX = dx / maxDist;
+                const normY = dy / maxDist;
+                
+                let direction = { dx: 0, dy: 0 };
+                
+                if (Math.abs(normX) < deadZone && Math.abs(normY) < deadZone) {
+                    direction = { dx: 0, dy: 0 };
+                } else {
+                    direction = get8Direction(normX, normY);
+                }
+                
+                // Отправляем только если изменилось
+                if (direction.dx !== lastDirection.dx || direction.dy !== lastDirection.dy) {
+                    lastDirection = direction;
+                    
+                    if (direction.dx === 0 && direction.dy === 0) {
+                        sendStop();
+                    } else {
+                        sendMove(direction.dx, direction.dy);
+                    }
+                }
+            }
+
+            function handleEnd() {
+                thumb.style.left = '50%';
+                thumb.style.top = '50%';
+                thumb.style.transform = 'translate(-50%, -50%)';
+                
+                lastDirection = { dx: 0, dy: 0 };
+                sendStop();
+            }
+
+            area.addEventListener('touchstart', e => {
+                e.preventDefault();
+                touchId = e.changedTouches[0].identifier;
+                handleMove(e.changedTouches[0].clientX, e.changedTouches[0].clientY);
+            }, { passive: false });
+
+            area.addEventListener('touchmove', e => {
+                e.preventDefault();
+                for (let t of e.changedTouches) {
+                    if (t.identifier === touchId) {
+                        handleMove(t.clientX, t.clientY);
+                    }
+                }
+            }, { passive: false });
+
+            area.addEventListener('touchend', e => {
+                for (let t of e.changedTouches) {
+                    if (t.identifier === touchId) {
+                        handleEnd();
+                    }
+                }
+            }, { passive: false });
+
+            area.addEventListener('touchcancel', handleEnd, { passive: false });
+
+            let mouseDown = false;
+            area.addEventListener('mousedown', e => { mouseDown = true;
+                handleMove(e.clientX, e.clientY); });
+            document.addEventListener('mousemove', e => { if (mouseDown) handleMove(e.clientX, e.clientY); });
+            document.addEventListener('mouseup', () => { if (mouseDown) { mouseDown = false;
+                    handleEnd(); } });
+        }
+
+        // ============================================================
+        // ====== ОТПРАВКА ДЕЙСТВИЙ (СОБЫТИЯ) ========================
+        // ============================================================
+
+        function sendMove(dx, dy) {
+            if (!matchId || gameState !== 'playing') return;
+            apiCall('/api/match/move', {
+                match_id: matchId,
+                player_name: playerName,
+                direction: { dx, dy }
+            }).catch(() => {});
+        }
+
+        function sendStop() {
+            if (!matchId || gameState !== 'playing') return;
+            apiCall('/api/match/stop', {
+                match_id: matchId,
+                player_name: playerName
+            }).catch(() => {});
+        }
+
+        function sendShoot() {
+            if (!matchId || gameState !== 'playing') return;
+            apiCall('/api/match/shoot', {
+                match_id: matchId,
+                player_name: playerName,
+                target_x: 1150,
+                target_y: 350
+            }).catch(() => {});
+        }
+
+        function sendTackle() {
+            if (!matchId || gameState !== 'playing') return;
+            apiCall('/api/match/tackle', {
+                match_id: matchId,
+                player_name: playerName
+            }).catch(() => {});
+        }
+
+        // ============================================================
+        // ====== КНОПКИ ==============================================
+        // ============================================================
+
+        function setupButtons() {
+            const shootBtn = document.getElementById('btn-shoot');
+            if (shootBtn) {
+                shootBtn.addEventListener('touchstart', e => { e.preventDefault();
+                    sendShoot(); });
+                shootBtn.addEventListener('mousedown', sendShoot);
+            }
+
+            const tackleBtn = document.getElementById('btn-tackle');
+            if (tackleBtn) {
+                tackleBtn.addEventListener('touchstart', e => { e.preventDefault();
+                    sendTackle(); });
+                tackleBtn.addEventListener('mousedown', sendTackle);
+            }
+
+            // Клавиатура
+            document.addEventListener('keydown', e => {
+                if (gameState === 'playing') {
+                    if (e.key === ' ') { e.preventDefault();
+                        sendShoot(); }
+                    if (e.key === 'q') sendTackle();
+                    if (e.key === 'Escape') leaveMatch();
+                }
+            });
+        }
+
+        // ============================================================
+        // ====== ВЫХОД ИЗ МАТЧА ======================================
         // ============================================================
 
         async function leaveMatch() {
             if (!matchId) return;
 
             await apiCall('/api/match/leave', {
-                match_id: matchId,
-                player: playerName
+                match_id: matchId
             });
 
             matchId = null;
@@ -1353,20 +1523,14 @@
         }
 
         // ============================================================
-        // ==================== ИГРОВОЙ ДВИЖОК ========================
+        // ====== ИГРОВОЙ ДВИЖОК ======================================
         // ============================================================
 
         window.onload = function() {
             canvas = document.getElementById('gameCanvas');
-            if (!canvas) {
-                console.error('❌ Canvas не найден!');
-                return;
-            }
+            if (!canvas) { console.error('❌ Canvas не найден!'); return; }
             ctx = canvas.getContext('2d');
-            if (!ctx) {
-                console.error('❌ Не удалось получить контекст!');
-                return;
-            }
+            if (!ctx) { console.error('❌ Не удалось получить контекст!'); return; }
 
             resizeCanvas();
             window.addEventListener('resize', resizeCanvas);
@@ -1374,8 +1538,7 @@
             updateUI();
             initSocket();
             setupJoystick();
-            setupActionButtons();
-            setupKeyboard();
+            setupButtons();
             gameLoop();
 
             console.log('🚀 Игра загружена!');
@@ -1389,143 +1552,6 @@
             canvas.height = window.innerHeight;
         }
 
-        // ---- ДЖОСТИК ----
-        function setupJoystick() {
-            const base = document.getElementById('joystick-base');
-            const thumb = document.getElementById('joystick-thumb');
-            const area = document.getElementById('joystick-area');
-
-            if (!base || !thumb || !area) return;
-
-            let touchId = null;
-
-            const handleMove = (cx, cy) => {
-                const rect = base.getBoundingClientRect();
-                const centerX = rect.left + rect.width / 2;
-                const centerY = rect.top + rect.height / 2;
-                const maxDist = rect.width / 2 - 30;
-                let dx = cx - centerX,
-                    dy = cy - centerY;
-                const dist = Math.sqrt(dx * dx + dy * dy);
-                if (dist > maxDist) { dx = dx / dist * maxDist;
-                    dy = dy / dist * maxDist; }
-                thumb.style.left = rect.width / 2 + dx - 27.5 + 'px';
-                thumb.style.top = rect.height / 2 + dy - 27.5 + 'px';
-                const dead = 0.15;
-                const normX = dx / maxDist,
-                    normY = dy / maxDist;
-                keys.up = normY < -dead;
-                keys.down = normY > dead;
-                keys.left = normX < -dead;
-                keys.right = normX > dead;
-                sendAction('move', {
-                    dx: keys.left ? -1 : keys.right ? 1 : 0,
-                    dy: keys.up ? -1 : keys.down ? 1 : 0
-                });
-            };
-
-            const handleEnd = () => {
-                thumb.style.left = '50%';
-                thumb.style.top = '50%';
-                thumb.style.transform = 'translate(-50%, -50%)';
-                keys.up = false;
-                keys.down = false;
-                keys.left = false;
-                keys.right = false;
-                sendAction('move', { dx: 0, dy: 0 });
-            };
-
-            area.addEventListener('touchstart', e => {
-                e.preventDefault();
-                touchId = e.changedTouches[0].identifier;
-                handleMove(e.changedTouches[0].clientX, e.changedTouches[0].clientY);
-            }, { passive: false });
-            area.addEventListener('touchmove', e => {
-                e.preventDefault();
-                for (let t of e.changedTouches) {
-                    if (t.identifier === touchId) handleMove(t.clientX, t.clientY);
-                }
-            }, { passive: false });
-            area.addEventListener('touchend', e => { for (let t of e.changedTouches) { if (t.identifier === touchId)
-                        handleEnd(); } }, { passive: false });
-            area.addEventListener('touchcancel', handleEnd, { passive: false });
-
-            let mouseDown = false;
-            area.addEventListener('mousedown', e => { mouseDown = true;
-                handleMove(e.clientX, e.clientY); });
-            document.addEventListener('mousemove', e => { if (mouseDown) handleMove(e.clientX, e.clientY); });
-            document.addEventListener('mouseup', () => { if (mouseDown) { mouseDown = false;
-                    handleEnd(); } });
-        }
-
-        // ---- КНОПКИ ----
-        function setupActionButtons() {
-            const shootBtn = document.getElementById('btn-shoot');
-            const passBtn = document.getElementById('btn-pass');
-            const tackleBtn = document.getElementById('btn-tackle');
-
-            if (shootBtn) {
-                shootBtn.addEventListener('touchstart', e => { e.preventDefault();
-                    sendAction('shoot', { target_x: 1150, target_y: 350 }); });
-                shootBtn.addEventListener('mousedown', () => sendAction('shoot', { target_x: 1150, target_y: 350 }));
-            }
-            if (passBtn) {
-                passBtn.addEventListener('touchstart', e => { e.preventDefault();
-                    sendAction('pass', {}); });
-                passBtn.addEventListener('mousedown', () => sendAction('pass', {}));
-            }
-            if (tackleBtn) {
-                tackleBtn.addEventListener('touchstart', e => { e.preventDefault();
-                    sendAction('tackle', {}); });
-                tackleBtn.addEventListener('mousedown', () => sendAction('tackle', {}));
-            }
-        }
-
-        // ---- КЛАВИАТУРА ----
-        function setupKeyboard() {
-            document.addEventListener('keydown', e => {
-                if (gameState === 'playing') {
-                    if (e.key === 'w' || e.key === 'ArrowUp') { keys.up = true;
-                        sendAction('move', { dx: keys.left ? -1 : keys.right ? 1 : 0, dy: -1 }); }
-                    if (e.key === 's' || e.key === 'ArrowDown') { keys.down = true;
-                        sendAction('move', { dx: keys.left ? -1 : keys.right ? 1 : 0, dy: 1 }); }
-                    if (e.key === 'a' || e.key === 'ArrowLeft') { keys.left = true;
-                        sendAction('move', { dx: -1, dy: keys.up ? -1 : keys.down ? 1 : 0 }); }
-                    if (e.key === 'd' || e.key === 'ArrowRight') { keys.right = true;
-                        sendAction('move', { dx: 1, dy: keys.up ? -1 : keys.down ? 1 : 0 }); }
-                    if (e.key === ' ') { e.preventDefault();
-                        sendAction('shoot', { target_x: 1150, target_y: 350 }); }
-                    if (e.key === 'e') sendAction('pass', {});
-                    if (e.key === 'q') sendAction('tackle', {});
-                    if (e.key === 'Escape') leaveMatch();
-                }
-            });
-            document.addEventListener('keyup', e => {
-                if (e.key === 'w' || e.key === 'ArrowUp') { keys.up = false;
-                    sendAction('move', { dx: keys.left ? -1 : keys.right ? 1 : 0, dy: 0 }); }
-                if (e.key === 's' || e.key === 'ArrowDown') { keys.down = false;
-                    sendAction('move', { dx: keys.left ? -1 : keys.right ? 1 : 0, dy: 0 }); }
-                if (e.key === 'a' || e.key === 'ArrowLeft') { keys.left = false;
-                    sendAction('move', { dx: 0, dy: keys.up ? -1 : keys.down ? 1 : 0 }); }
-                if (e.key === 'd' || e.key === 'ArrowRight') { keys.right = false;
-                    sendAction('move', { dx: 0, dy: keys.up ? -1 : keys.down ? 1 : 0 }); }
-            });
-        }
-
-        // ---- ОТПРАВКА ДЕЙСТВИЙ ----
-        function sendAction(type, data) {
-            if (!matchId || gameState !== 'playing') return;
-            const now = Date.now();
-            if (now - lastActionTime < 50) return;
-            lastActionTime = now;
-            apiCall('/api/match/action', {
-                match_id: matchId,
-                player_name: playerName,
-                action: { type, ...data }
-            }).catch(() => {});
-        }
-
-        // ---- ОБНОВЛЕНИЕ ОТ СЕРВЕРА ----
         function updateGameFromState(state) {
             if (!state) return;
 
@@ -1569,7 +1595,6 @@
             }
         }
 
-        // ---- ЗАПУСК ИГРЫ ----
         function startGame(type) {
             isOnline = type === 'online';
             gameState = 'playing';
@@ -1601,7 +1626,6 @@
             }
         }
 
-        // ---- ИГРОВОЙ ЦИКЛ ----
         function gameLoop() {
             update();
             render();
@@ -1732,7 +1756,6 @@
             }
         }
 
-        // ---- ЗАВЕРШЕНИЕ МАТЧА ----
         function endMatch() {
             if (matchFinished) return;
             matchFinished = true;
@@ -1775,9 +1798,10 @@
             setTimeout(() => { el.style.display = 'none'; }, 2500);
         }
 
-        console.log('⚽ STREET FOOTBALL ONLINE v21.0 загружена!');
+        console.log('⚽ STREET FOOTBALL 1x1 v22.0 загружена!');
         console.log('🌐 Сервер:', SERVER_URL);
         console.log('👤 Игрок:', playerName || 'Гость');
+        console.log('🎮 8-направленный джостик!');
     </script>
 </body>
 </html>
